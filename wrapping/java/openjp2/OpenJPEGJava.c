@@ -41,7 +41,11 @@
 #include "opj_getopt.h"
 #include "convert.h"
 #include "index.h"
-#include "dirent.h"
+#ifdef _WIN32
+#include "windirent.h"
+#else
+#include <dirent.h>
+#endif /* _WIN32 */
 #include "org_openJpeg_OpenJPEGJavaEncoder.h"
 
 #ifndef _WIN32
@@ -50,6 +54,18 @@
 #endif
 
 #include "format_defs.h"
+
+
+static  int int_max(int a, int b) {
+	return (a > b) ? a : b;
+}
+static int int_floorlog2(int a) {
+	int l;
+	for (l = 0; a > 1; l++) {
+		a >>= 1;
+	}
+	return l;
+}
 
 #define CINEMA_24_CS 1302083	/*Codestream length for 24fps*/
 #define CINEMA_48_CS 651041		/*Codestream length for 48fps*/
@@ -207,8 +223,6 @@ static void encode_help_display() {
 	fprintf(stdout,"\n");
 	fprintf(stdout,"-TP          : devide packets of every tile into tile-parts (-TP R) [R, L, C]\n");
 	fprintf(stdout,"\n");
-	fprintf(stdout,"-x           : create an index file *.Idx (-x index_name.Idx) \n");
-	fprintf(stdout,"\n");
 	fprintf(stdout,"-ROI         : c=%%d,U=%%d : quantization indices upshifted \n");
 	fprintf(stdout,"               for component c=%%d [%%d = 0,1,2]\n");
 	fprintf(stdout,"               with a value of U=%%d [0 <= %%d <= 37] (i.e. -ROI c=0,U=25) \n");
@@ -332,22 +346,22 @@ static void encode_help_display() {
 
 static OPJ_PROG_ORDER give_progression(const char progression[4]) {
 	if(strncmp(progression, "LRCP", 4) == 0) {
-		return LRCP;
+		return OPJ_LRCP;
 	}
 	if(strncmp(progression, "RLCP", 4) == 0) {
-		return RLCP;
+		return OPJ_RLCP;
 	}
 	if(strncmp(progression, "RPCL", 4) == 0) {
-		return RPCL;
+		return OPJ_RPCL;
 	}
 	if(strncmp(progression, "PCRL", 4) == 0) {
-		return PCRL;
+		return OPJ_PCRL;
 	}
 	if(strncmp(progression, "CPRL", 4) == 0) {
-		return CPRL;
+		return OPJ_CPRL;
 	}
 
-	return PROG_UNKNOWN;
+	return OPJ_PROG_UNKNOWN;
 }
 
 static int initialise_4K_poc(opj_poc_t *POC, int numres){
@@ -357,14 +371,14 @@ static int initialise_4K_poc(opj_poc_t *POC, int numres){
 	POC[0].layno1  = 1;
 	POC[0].resno1  = numres-1;
 	POC[0].compno1 = 3;
-	POC[0].prg1 = CPRL;
+	POC[0].prg1 = OPJ_CPRL;
 	POC[1].tile  = 1;
 	POC[1].resno0  = numres-1; 
 	POC[1].compno0 = 0;
 	POC[1].layno1  = 1;
 	POC[1].resno1  = numres;
 	POC[1].compno1 = 3;
-	POC[1].prg1 = CPRL;
+	POC[1].prg1 = OPJ_CPRL;
 	return 2;
 }
 
@@ -389,7 +403,7 @@ static void cinema_parameters(opj_cparameters_t *parameters){
 	parameters->csty |= 0x01;
 
 	/*The progression order shall be CPRL*/
-	parameters->prog_order = CPRL;
+	parameters->prog_order = OPJ_CPRL;
 
 	/* No ROI */
 	parameters->roi_compno = -1;
@@ -407,8 +421,8 @@ static void cinema_setup_encoder(opj_cparameters_t *parameters,opj_image_t *imag
 	opj_poc_t *POC = NULL;
 
 	switch (parameters->cp_cinema){
-	case CINEMA2K_24:
-	case CINEMA2K_48:
+	case OPJ_CINEMA2K_24:
+	case OPJ_CINEMA2K_48:
 		if(parameters->numresolution > 6){
 			parameters->numresolution = 6;
 		}
@@ -416,11 +430,11 @@ static void cinema_setup_encoder(opj_cparameters_t *parameters,opj_image_t *imag
 			fprintf(stdout,"Image coordinates %d x %d is not 2K compliant.\nJPEG Digital Cinema Profile-3"
 				"(2K profile) compliance requires that at least one of coordinates match 2048 x 1080\n",
 				image->comps[0].w,image->comps[0].h);
-			parameters->cp_rsiz = STD_RSIZ;
+			parameters->cp_rsiz = OPJ_STD_RSIZ;
 		}
 	break;
 	
-	case CINEMA4K_24:
+	case OPJ_CINEMA4K_24:
 		if(parameters->numresolution < 1){
 				parameters->numresolution = 1;
 			}else if(parameters->numresolution > 7){
@@ -430,15 +444,15 @@ static void cinema_setup_encoder(opj_cparameters_t *parameters,opj_image_t *imag
 			fprintf(stdout,"Image coordinates %d x %d is not 4K compliant.\nJPEG Digital Cinema Profile-4" 
 				"(4K profile) compliance requires that at least one of coordinates match 4096 x 2160\n",
 				image->comps[0].w,image->comps[0].h);
-			parameters->cp_rsiz = STD_RSIZ;
+			parameters->cp_rsiz = OPJ_STD_RSIZ;
 		}
 		parameters->numpocs = initialise_4K_poc(parameters->POC,parameters->numresolution);
 		break;
 	}
 
 	switch (parameters->cp_cinema){
-		case CINEMA2K_24:
-		case CINEMA4K_24:
+		case OPJ_CINEMA2K_24:
+		case OPJ_CINEMA4K_24:
 			for(i=0 ; i<parameters->tcp_numlayers ; i++){
 				temp_rate = 0 ;
 				if (img_fol->rates[i]== 0){
@@ -458,7 +472,7 @@ static void cinema_setup_encoder(opj_cparameters_t *parameters,opj_image_t *imag
 			parameters->max_comp_size = COMP_24_CS;
 			break;
 		
-		case CINEMA2K_48:
+		case OPJ_CINEMA2K_48:
 			for(i=0 ; i<parameters->tcp_numlayers ; i++){
 				temp_rate = 0 ;
 				if (img_fol->rates[i]== 0){
@@ -483,8 +497,8 @@ static void cinema_setup_encoder(opj_cparameters_t *parameters,opj_image_t *imag
 
 
 /* ------------------------------------------------------------------------------------ */
-static int parse_cmdline_encoder(int argc, char **argv, opj_cparameters_t *parameters,
-													img_fol_t *img_fol, char *indexfilename) {
+static int parse_cmdline_encoder(int argc, const char **argv, opj_cparameters_t *parameters,
+													img_fol_t *img_fol) {
 	int i, j,totlen;
 	opj_option_t long_option[]={
 		{"cinema2K",REQ_ARG, NULL ,'w'},
@@ -704,15 +718,6 @@ static int parse_cmdline_encoder(int argc, char **argv, opj_cparameters_t *param
 
 				/* ----------------------------------------------------- */
 
-			case 'x':			/* creation of index file */
-			{
-				char *index = opj_optarg;
-				strncpy(indexfilename, index, OPJ_PATH_LEN);
-			}
-			break;
-
-				/* ----------------------------------------------------- */
-
 			case 'p':			/* progression order */
 			{
 				char progression[4];
@@ -886,15 +891,15 @@ static int parse_cmdline_encoder(int argc, char **argv, opj_cparameters_t *param
 				int fps=0;
 				sscanf(opj_optarg,"%d",&fps);
 				if(fps == 24){
-					parameters->cp_cinema = CINEMA2K_24;
+					parameters->cp_cinema = OPJ_CINEMA2K_24;
 				}else if(fps == 48 ){
-					parameters->cp_cinema = CINEMA2K_48;
+					parameters->cp_cinema = OPJ_CINEMA2K_48;
 				}else {
 					fprintf(stderr,"Incorrect value!! must be 24 or 48\n");
 					return 1;
 				}
 				fprintf(stdout,"CINEMA 2K compliant codestream\n");
-				parameters->cp_rsiz = CINEMA2K;
+				parameters->cp_rsiz = OPJ_CINEMA2K;
 				
 			}
 			break;
@@ -903,9 +908,9 @@ static int parse_cmdline_encoder(int argc, char **argv, opj_cparameters_t *param
 			
 			case 'y':			/* Digital Cinema 4K profile compliance*/
 			{
-				parameters->cp_cinema = CINEMA4K_24;
+				parameters->cp_cinema = OPJ_CINEMA4K_24;
 				fprintf(stdout,"CINEMA 4K compliant codestream\n");
-				parameters->cp_rsiz = CINEMA4K;
+				parameters->cp_rsiz = OPJ_CINEMA4K;
 			}
 			break;
 				
@@ -1247,7 +1252,7 @@ static int parse_cmdline_encoder(int argc, char **argv, opj_cparameters_t *param
 	/* check for possible errors */
 	if (parameters->cp_cinema){
 		if(parameters->tcp_numlayers > 1){
-			parameters->cp_rsiz = STD_RSIZ;
+			parameters->cp_rsiz = OPJ_STD_RSIZ;
      	fprintf(stdout,"Warning: DC profiles do not allow more than one quality layer. The codestream created will not be compliant with the DC profile\n");
 		}
 	}
@@ -1394,7 +1399,7 @@ static char* create_index_into_byte_array(opj_codestream_info_t *cstr_info, int*
 				max_numdecompos = cstr_info->numdecompos[compno];
 		}	
 
-		if (cstr_info->prog == LRCP) {	/* LRCP */
+		if (cstr_info->prog == OPJ_LRCP) {	/* LRCP */
 
 			for (layno = 0; layno < cstr_info->numlayers; layno++) {
 				for (resno = 0; resno < max_numdecompos + 1; resno++) {
@@ -1420,7 +1425,7 @@ static char* create_index_into_byte_array(opj_codestream_info_t *cstr_info, int*
 				}
 			}
 		} /* LRCP */
-		else if (cstr_info->prog == RLCP) {	/* RLCP */
+		else if (cstr_info->prog == OPJ_RLCP) {	/* RLCP */
 
 			for (resno = 0; resno < max_numdecompos + 1; resno++) {
 				for (layno = 0; layno < cstr_info->numlayers; layno++) {
@@ -1446,7 +1451,7 @@ static char* create_index_into_byte_array(opj_codestream_info_t *cstr_info, int*
 				}
 			}
 		} /* RLCP */
-		else if (cstr_info->prog == RPCL) {	/* RPCL */
+		else if (cstr_info->prog == OPJ_RPCL) {	/* RPCL */
 
 			for (resno = 0; resno < max_numdecompos + 1; resno++) {
 				/* I suppose components have same XRsiz, YRsiz */
@@ -1490,7 +1495,7 @@ static char* create_index_into_byte_array(opj_codestream_info_t *cstr_info, int*
 				} /* compno */
 			} /* resno */
 		} /* RPCL */
-		else if (cstr_info->prog == PCRL) {	/* PCRL */
+		else if (cstr_info->prog == OPJ_PCRL) {	/* PCRL */
 			/* I suppose components have same XRsiz, YRsiz */
 			int x0 = cstr_info->tile_Ox + tileno - (int)floor( (float)tileno/(float)cstr_info->tw ) * cstr_info->tw * cstr_info->tile_x;
 			int y0 = cstr_info->tile_Ox + (int)floor( (float)tileno/(float)cstr_info->tw ) * cstr_info->tile_y;
@@ -1601,18 +1606,18 @@ static opj_image_t* loadImage(opj_cparameters_t *parameters, JNIEnv *env, jobjec
 	opj_image_t * img = NULL;
 	int compno, numcomps;
 	opj_image_t * image = NULL;
-	opj_image_comp_t *comp;
+	opj_image_comp_t *comp=NULL;
 	opj_image_cmptparm_t cmptparm[3];	/* maximum of 3 components */
 	OPJ_COLOR_SPACE color_space;
 	jfieldID	fid;
 	jint		ji;
-	jbyteArray	jba;
-	jshortArray jsa;
-	jintArray	jia;
+	jbyteArray	jba=NULL;
+	jshortArray jsa=NULL;
+	jintArray	jia=NULL;
 	int			len;
-	jbyte		*jbBody;
-	jshort		*jsBody;
-	jint		*jiBody;
+	jbyte		*jbBody=NULL;
+	jshort		*jsBody=NULL;
+	jint		*jiBody=NULL;
 	jboolean		isCopy;
 
 	/* Image width, height and depth*/
@@ -1631,10 +1636,10 @@ static opj_image_t* loadImage(opj_cparameters_t *parameters, JNIEnv *env, jobjec
 	/* Read the image*/
 	if (depth <=16) {
 		numcomps = 1;
-		color_space = CLRSPC_GRAY;
+		color_space = OPJ_CLRSPC_GRAY;
 	} else {
 		numcomps = 3;
-		color_space = CLRSPC_SRGB;
+		color_space = OPJ_CLRSPC_SRGB;
 	}
 	memset(&cmptparm[0], 0, numcomps * sizeof(opj_image_cmptparm_t));
 
@@ -1755,58 +1760,141 @@ static opj_image_t* loadImage(opj_cparameters_t *parameters, JNIEnv *env, jobjec
 	return image;
 }
 
+/* --------------------------------------------------------------------------
+   --------------------   MAIN METHOD CLEANUP -----------------------*/
+void encode_cleanup(JNIEnv *env,
+					jbyteArray	*jba,
+					jbyte		**jbBody,
+					opj_image_t **image, 
+					opj_stream_t **l_stream,
+					opj_codec_t **l_codec, 
+					opj_cparameters_t *parameters, 
+					img_fol_t *img_fol)
+{
+	/* close and free the byte stream */
+	if (l_stream && *l_stream)
+	{
+		opj_stream_destroy_v3(*l_stream);
+		*l_stream = NULL;
+	}
+	/* free remaining compression structures */
+	if (l_codec && *l_codec)
+	{
+		opj_destroy_codec(*l_codec);
+		*l_codec = NULL;
+	}
+	/* free image data */
+	if (image && *image)
+	{
+		opj_image_destroy(*image);
+		*image = NULL;
+	}
+	if (jba && *jba && jbBody && *jbBody)
+	{
+		(*env)->ReleaseByteArrayElements(env, *jba, *jbBody, 0);
+		*jba = NULL;
+		*jbBody = NULL;
+	}
+
+	/* free user parameters structure */
+	if (parameters)
+	{
+		if( parameters->cp_comment)
+		{
+			opj_free(parameters->cp_comment);
+			parameters->cp_comment = NULL;
+		}
+
+		if(parameters->cp_matrice)
+		{
+			opj_free(parameters->cp_matrice);
+			parameters->cp_matrice = NULL;
+		}
+	}
+
+    if(img_fol  && img_fol->rates)
+	{
+		opj_free(img_fol->rates);
+		img_fol->rates = NULL;
+	}
+		
+
+}
 
 /* --------------------------------------------------------------------------
    --------------------   MAIN METHOD, CALLED BY JAVA -----------------------*/
 JNIEXPORT jlong JNICALL Java_org_openJpeg_OpenJPEGJavaEncoder_internalEncodeImageToJ2K(JNIEnv *env, jobject obj, jobjectArray javaParameters) {
-	int argc;		/* To simulate the command line parameters (taken from the javaParameters variable) and be able to re-use the */
-	char **argv;	/*  'parse_cmdline_decoder' method taken from the j2k_to_image project */
-	opj_bool bSuccess;
+	int argc = 0;		/* To simulate the command line parameters (taken from the javaParameters variable) and be able to re-use the */
+	const char **argv = NULL;	/*  'parse_cmdline_decoder' method taken from the j2k_to_image project */
+	OPJ_BOOL bSuccess;
+    OPJ_BOOL bUseTiles = OPJ_FALSE; /* OPJ_TRUE */
+	OPJ_UINT32 l_nb_tiles = 4;
+
 	opj_cparameters_t parameters;	/* compression parameters */
 	img_fol_t img_fol;
-	opj_event_mgr_t event_mgr;		/* event manager */
 	opj_image_t *image = NULL;
-	int i,j,num_images;
-	int imageno;
-	opj_codestream_info_t cstr_info;		/* Codestream information structure */
-	char indexfilename[OPJ_PATH_LEN];	/* index file name */
+	int i,j;
 
-	char* compressed_index = NULL;
-	int compressed_index_size=-1;
 	/* ==> Access variables to the Java member variables*/
-	jsize		arraySize;
-	jclass		cls;
-	jobject		object;
+	jsize		arraySize=0;
+	jclass		cls = 0;
+	jobject		object = NULL;
 	jboolean	isCopy;
 	jfieldID	fid;
-	jbyteArray	jba;
-	jbyte		*jbBody;
+	jbyteArray	jba=NULL;
+	jbyte		*jbBody=NULL;
 	callback_variables_t msgErrorCallback_vars;
 	/* <== access variable to the Java member variables.*/
 
 	/* For the encoding and storage into the file*/
-	opj_cinfo_t* cinfo;
-	int codestream_length;
-	opj_cio_t *cio = NULL;
-	FILE *f = NULL;
+	opj_stream_t *l_stream = NULL;
+	opj_codec_t* l_codec = NULL;
+	opj_buffer_info_t buf_info;
+	int parse_cmdline_encoder_rc = 0;
 
+	OPJ_BOOL encodeToFile = OPJ_FALSE;
+
+	memset(&buf_info, 0, sizeof(opj_buffer_info_t));
+	
 	/* JNI reference to the calling class*/
 	cls = (*env)->GetObjectClass(env, obj);
+	if (cls == 0)
+	{
+		fprintf(stderr,"GetObjectClass returned zero");
+		return -1;
+
+	}
 	
 	/* Pointers to be able to call a Java method for all the info and error messages*/
 	msgErrorCallback_vars.env = env;
 	msgErrorCallback_vars.jobj = &obj;
 	msgErrorCallback_vars.message_mid = (*env)->GetMethodID(env, cls, "logMessage", "(Ljava/lang/String;)V");
+	if((*env)->ExceptionOccurred(env))
+	{
+		return -1;
+	}
 	msgErrorCallback_vars.error_mid = (*env)->GetMethodID(env, cls, "logError", "(Ljava/lang/String;)V");
+	if((*env)->ExceptionOccurred(env))
+	{
+		return -1;
+	}
 
 	arraySize = (*env)->GetArrayLength(env, javaParameters);
+	if((*env)->ExceptionOccurred(env))
+	{
+		return -1;
+	}
+
 	argc = (int) arraySize +1;
-	argv = opj_malloc(argc*sizeof(char*));
+	argv = (char**)opj_malloc(argc*sizeof(char*));
 	argv[0] = "ProgramName.exe";	/* The program name: useless*/
 	j=0;
-	for (i=1; i<argc; i++) {
+	for (i=1; i<argc; i++) 
+	{
+		argv[i]=NULL;
 		object = (*env)->GetObjectArrayElement(env, javaParameters, i-1);
-		argv[i] = (char*)(*env)->GetStringUTFChars(env, object, &isCopy);
+		if (object)
+		   argv[i] = (char*)(*env)->GetStringUTFChars(env, object, &isCopy);
 	}
 
 	/*printf("C: ");
@@ -1815,42 +1903,60 @@ JNIEXPORT jlong JNICALL Java_org_openJpeg_OpenJPEGJavaEncoder_internalEncodeImag
 	}
 	printf("\n");*/
 
-	/*
-	configure the event callbacks
-	*/
-	memset(&event_mgr, 0, sizeof(opj_event_mgr_t));
-	event_mgr.error_handler = error_callback;
-	event_mgr.warning_handler = warning_callback;
-	event_mgr.info_handler = info_callback;
-
 	/* set encoding parameters to default values */
 	opj_set_default_encoder_parameters(&parameters);
 	parameters.cod_format = J2K_CFMT;
 	/*parameters.index_on = 1;*/
 
-	/* Initialize indexfilename and img_fol */
-	*indexfilename = 0;
+	/* Initialize img_fol */
 	memset(&img_fol,0,sizeof(img_fol_t));
 
 	/* parse input and get user encoding parameters */
-	if (parse_cmdline_encoder(argc, argv, &parameters,&img_fol, indexfilename) == 1) {
-		/* Release the Java arguments array*/
-		for (i=1; i<argc; i++)
-			(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, javaParameters, i-1), argv[i]);
-		return -1;
-	}
+	parse_cmdline_encoder_rc =  parse_cmdline_encoder(argc, argv, &parameters,&img_fol);
+	encodeToFile = parameters.outfile && parameters.outfile[0] != '\0';
 
 	/* Release the Java arguments array*/
 	for (i=1; i<argc; i++)
-		(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, javaParameters, i-1), argv[i]);
-
-	if (parameters.cp_cinema){
+	{
+		if (argv[i])
+			(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, javaParameters, i-1), argv[i]);
+	}
+		
+	free(argv);
+	argv = NULL;
+	if (parse_cmdline_encoder_rc == 1)
+	  return -1;
+	
+	if (parameters.cp_cinema)
+	{
+		img_fol.rates = (float*)malloc(parameters.tcp_numlayers * sizeof(float));
+		for(i=0; i< parameters.tcp_numlayers; i++)
+		{
+			img_fol.rates[i] = parameters.tcp_rates[i];
+		}
 		cinema_parameters(&parameters);
 	}
-				
 
 	/* Create comment for codestream */
-	if(parameters.cp_comment == NULL) {
+	if(parameters.cp_comment == NULL) 
+	{
+        const char comment[] = "Created by OpenJPEG version ";
+		const size_t clen = strlen(comment);
+        const char *version = opj_version();
+/* UniPG>> */
+#ifdef USE_JPWL
+		parameters.cp_comment = (char*)malloc(clen+strlen(version)+11);
+		sprintf(parameters.cp_comment,"%s%s with JPWL", comment, version);
+#else
+		parameters.cp_comment = (char*)malloc(clen+strlen(version)+1);
+		sprintf(parameters.cp_comment,"%s%s", comment, version);
+#endif
+/* <<UniPG */
+	}	
+
+	/* Create comment for codestream */
+	if(!parameters.cp_comment) 
+	{
 		const char comment[] = "Created by JavaOpenJPEG version ";
 		const size_t clen = strlen(comment);
 		const char *version = opj_version();
@@ -1866,108 +1972,148 @@ JNIEXPORT jlong JNICALL Java_org_openJpeg_OpenJPEGJavaEncoder_internalEncodeImag
 
 	}
 
-	/* Read directory if necessary */
-	num_images=1;
-
-	/*Encoding image one by one*/
-	for(imageno=0;imageno<num_images;imageno++)
+	fprintf(stderr,"\n");
+	image = loadImage(&parameters, env, obj, cls);
+	/*printf("C: after load image: image = %d\n", image);*/
+	if (!image)
 	{
-		image = NULL;
-		fprintf(stderr,"\n");
+		fprintf(stderr, "Unable to load image\n");
+		encode_cleanup(env,&jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
+		return -1; 
+	}
 
-		image = loadImage(&parameters, env, obj, cls);
-		/*printf("C: after load image: image = %d\n", image);*/
-		if (!image) {
-			fprintf(stderr, "Unable to load image\n");
-			return -1; 
+	/* Decide if MCT should be used */
+	parameters.tcp_mct = image->numcomps == 3 ? 1 : 0;
+	if(parameters.cp_cinema)
+	{
+		cinema_setup_encoder(&parameters,image,&img_fol);
+	}
+
+	/* encode the destination image */
+	/* ---------------------------- */
+
+	switch(parameters.cod_format) 
+	{
+		case J2K_CFMT:	/* JPEG-2000 codestream */
+		{
+			/* Get a decoder handle */
+			l_codec = opj_create_compress(OPJ_CODEC_J2K);
+			break;
 		}
-
-		/* Decide if MCT should be used */
-		parameters.tcp_mct = image->numcomps == 3 ? 1 : 0;
-
-		if(parameters.cp_cinema){
-			cinema_setup_encoder(&parameters,image,&img_fol);
+		case JP2_CFMT:	/* JPEG 2000 compressed image data */
+		{
+			/* Get a decoder handle */
+			l_codec = opj_create_compress(OPJ_CODEC_JP2);
+			break;
 		}
-
-		/* encode the destination image */
-		/* ---------------------------- */
-		/* get a J2K compressor handle */
-		if (parameters.cod_format == J2K_CFMT) {	/* J2K format output */
-			cinfo = opj_create_compress(CODEC_J2K);
-		} else {									/* JP2 format output */
-		    cinfo = opj_create_compress(CODEC_JP2);
-		}
-		/* catch events using our callbacks and give a local context */
-		opj_set_event_mgr((opj_common_ptr)cinfo, &event_mgr, &msgErrorCallback_vars);
-
-		/* setup the encoder parameters using the current image and user parameters */
-		opj_setup_encoder(cinfo, &parameters, image);
-
-		/* open a byte stream for writing */
-		/* allocate memory for all tiles */
-		cio = opj_cio_open((opj_common_ptr)cinfo, NULL, 0);
-
-		/* encode the image */
-		bSuccess = opj_encode_with_info(cinfo, cio, image, &cstr_info);
-		printf("C: after opj_encode_with_info\n");
-		if (!bSuccess) {
-			opj_cio_close(cio);
-			fprintf(stderr, "failed to encode image\n");
+		default:
+			fprintf(stderr, "unbale to read file.\n");
+			encode_cleanup(env,&jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
 			return -1;
-		}
-		codestream_length = cio_tell(cio);
+	}
+		
+	/* catch events using our callbacks and give a local context */		
+	opj_set_info_handler(l_codec, info_callback,00);
+	opj_set_warning_handler(l_codec, warning_callback,00);
+	opj_set_error_handler(l_codec, error_callback,00);
 
-		/* write the index on disk, if needed (-x 'filename') */
-		if (*indexfilename) {
-			bSuccess = write_index_file(&cstr_info, indexfilename);
-			if (bSuccess) {
-				fprintf(stderr, "Failed to output index file into [%s]\n", indexfilename);
-			}
-		}
+    if( bUseTiles ) 
+	{
+      parameters.cp_tx0 = 0;
+      parameters.cp_ty0 = 0;
+      parameters.tile_size_on = OPJ_TRUE;
+      parameters.cp_tdx = 512;
+      parameters.cp_tdy = 512;
+    }
+	opj_setup_encoder(l_codec, &parameters, image);
+	if (! l_codec)
+	{
+		encode_cleanup(env,&jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
+		return -1;
+	}
 
-		compressed_index = create_index_into_byte_array(&cstr_info, &compressed_index_size);
-		/* Allocates the Java compressedIndex byte[] and sends this index into the Java object */
-		fid = (*env)->GetFieldID(env, cls,"compressedIndex", "[B");
-		jba = (*env)->NewByteArray(env, compressed_index_size+1);
-		jbBody = (*env)->GetPrimitiveArrayCritical(env, jba, 0);
-		memcpy(jbBody, compressed_index, compressed_index_size);
-		(*env)->ReleasePrimitiveArrayCritical(env, jba, jbBody, 0);
-		(*env)->SetObjectField(env, obj, fid, jba); 
-		opj_free(compressed_index);
 
-		/* write the generated codestream to disk ? */
-		if (parameters.outfile[0]!='\0') {
-			f = fopen(parameters.outfile, "wb");
-			if (!f) {
-				fprintf(stderr, "failed to open [%s] for writing\n", parameters.outfile);
-				return -1;
-			}
-			fwrite(cio->buffer, 1, codestream_length, f);
-			fclose(f);
-			fprintf(stdout,"Generated outfile [%s]\n",parameters.outfile);
-		}
-
+	/* open a byte stream for writing and allocate memory for all tiles */
+	if (encodeToFile)
+	{
+		l_stream = opj_stream_create_default_file_stream_v3(parameters.outfile,OPJ_FALSE);
+	}
+	else
+	{
 		/* Write the generated codestream to the Java pre-allocated compressedStream byte[] */
 		fid = (*env)->GetFieldID(env, cls,"compressedStream", "[B");
 		jba = (*env)->GetObjectField(env, obj, fid);
-		jbBody = (*env)->GetPrimitiveArrayCritical(env, jba, 0);
-		memcpy(jbBody, cio->buffer, codestream_length);
-		(*env)->ReleasePrimitiveArrayCritical(env, jba, jbBody, 0);
+		if (jba != NULL)
+		{
+			jbBody = (*env)->GetByteArrayElements(env, jba, 0);
+			buf_info.len = (*env)->GetArrayLength(env, jba);
+			buf_info.buf = jbBody;
+			buf_info.cur = jbBody;
+			l_stream = opj_stream_create_buffer_stream(&buf_info,OPJ_FALSE);
+		}
 
-		/* close and free the byte stream */
-		opj_cio_close(cio);
-
-		/* free remaining compression structures */
-		opj_destroy_compress(cinfo);
-		opj_destroy_cstr_info(&cstr_info);
-
-		/* free image data */
-		opj_image_destroy(image);
+	}
+	if (! l_stream)
+	{
+		encode_cleanup(env, &jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
+		return -1;
 	}
 
-	/* free user parameters structure */
-  if(parameters.cp_comment) opj_free(parameters.cp_comment);
-	if(parameters.cp_matrice) opj_free(parameters.cp_matrice);
+	/* encode the image */
+    bSuccess = opj_start_compress(l_codec,image,l_stream);
+    if (!bSuccess)  
+	{
+      fprintf(stderr, "failed to encode image: opj_start_compress\n");
+    }
 
-	return codestream_length;
+    if( bUseTiles ) 
+	{
+      OPJ_BYTE *l_data;
+      OPJ_UINT32 l_data_size = 512*512*3;
+      l_data = (OPJ_BYTE*) opj_malloc( l_data_size * sizeof(OPJ_BYTE));
+      memset(l_data, 0, l_data_size );
+      assert( l_data );
+      for (i=0;i<l_nb_tiles;++i) 
+	  {
+        if (! opj_write_tile(l_codec,i,l_data,l_data_size,l_stream)) 
+		{
+          fprintf(stderr, "ERROR -> test_tile_encoder: failed to write the tile %d!\n",i);
+		  opj_free(l_data); 
+          encode_cleanup(env, &jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
+          return -1;
+        }
+      }
+      opj_free(l_data);
+	  l_data = NULL;
+    }
+    else 
+	{
+      bSuccess = bSuccess && opj_encode(l_codec, l_stream);
+      if (!bSuccess) 
+	  {
+        fprintf(stderr, "failed to encode image: opj_encode\n");
+      }
+    }
+
+	bSuccess = bSuccess && opj_end_compress(l_codec, l_stream);
+	if (!bSuccess) 
+	{
+		fprintf(stderr, "failed to encode image: opj_end_compress\n");
+	}
+
+	if (!bSuccess) 
+	{
+		fprintf(stderr, "failed to encode image\n");
+		encode_cleanup(env, &jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
+		return -1;
+	}
+
+	if (encodeToFile)
+		fprintf(stderr,"Generated outfile %s\n",parameters.outfile);
+	else
+		fprintf(stderr,"Generated compressed buffer \n");
+	
+	encode_cleanup(env, &jba, &jbBody, &image, &l_stream, &l_codec, &parameters, &img_fol);
+	return buf_info.len;
 }
+

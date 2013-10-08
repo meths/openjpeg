@@ -200,45 +200,325 @@ OPJ_BOOL OPJ_CALLCONV opj_set_error_handler(opj_codec_t * p_codec,
 
 /* ---------------------------------------------------------------------- */
 
-static OPJ_SIZE_T opj_read_from_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, FILE * p_file)
+/*############################################*/
+
+static OPJ_SIZE_T opj_read_from_buffer(void * p_buffer,
+    OPJ_SIZE_T p_nb_bytes, opj_buffer_info_t* p_source_buffer)
 {
-	OPJ_SIZE_T l_nb_read = fread(p_buffer,1,p_nb_bytes,p_file);
+    OPJ_UINT32 l_nb_read;
+
+    if(p_source_buffer->cur + p_nb_bytes < p_source_buffer->buf + p_source_buffer->len )
+   {
+    l_nb_read = p_nb_bytes;
+   }
+    else
+   {
+    l_nb_read = (OPJ_UINT32)(p_source_buffer->buf + p_source_buffer->len - p_source_buffer->cur);
+   }
+    memcpy(p_buffer, p_source_buffer->cur, l_nb_read);
+    p_source_buffer->cur += l_nb_read;
+
+    return l_nb_read ? l_nb_read : ((OPJ_UINT32)-1);
+}
+
+static OPJ_SIZE_T opj_write_from_buffer(void * p_buffer,
+    OPJ_SIZE_T p_nb_bytes, opj_buffer_info_t* p_source_buffer)
+{
+    memcpy(p_source_buffer->cur,p_buffer, p_nb_bytes);
+    p_source_buffer->cur += p_nb_bytes;
+    p_source_buffer->len += p_nb_bytes;
+
+    return p_nb_bytes;
+}
+
+static OPJ_SIZE_T opj_skip_from_buffer(OPJ_SIZE_T p_nb_bytes,
+    opj_buffer_info_t * p_source_buffer)
+{
+    if(p_source_buffer->cur + p_nb_bytes < p_source_buffer->buf + p_source_buffer->len )
+   {
+    p_source_buffer->cur += p_nb_bytes;
+    return p_nb_bytes;
+   }
+    p_source_buffer->cur = p_source_buffer->buf + p_source_buffer->len;
+
+    return (OPJ_SIZE_T)-1;
+}
+
+static OPJ_BOOL opj_seek_from_buffer(OPJ_SIZE_T p_nb_bytes,
+    opj_buffer_info_t * p_source_buffer)
+{
+    if(p_source_buffer->cur + p_nb_bytes < p_source_buffer->buf + p_source_buffer->len )
+   {
+    p_source_buffer->cur += p_nb_bytes;
+    return OPJ_TRUE;
+   }
+    p_source_buffer->cur = p_source_buffer->buf + p_source_buffer->len;
+
+    return OPJ_FALSE;
+}
+
+opj_stream_t* OPJ_CALLCONV opj_stream_create_buffer_stream(opj_buffer_info_t* p_source_buffer, OPJ_BOOL p_is_read_stream)
+{
+    opj_stream_t* l_stream;
+
+    if(! p_source_buffer) return NULL;
+
+    l_stream = opj_stream_default_create(p_is_read_stream);
+
+    if(! l_stream) return NULL;
+
+    opj_stream_set_user_data(l_stream, p_source_buffer);
+
+	opj_stream_set_user_data_length(l_stream, p_source_buffer->len);
+
+	if (p_is_read_stream)
+        opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_buffer);
+	else
+        opj_stream_set_write_function(l_stream,(opj_stream_write_fn) opj_write_from_buffer);
+    opj_stream_set_skip_function(l_stream, (opj_stream_skip_fn) opj_skip_from_buffer);
+    opj_stream_set_seek_function(l_stream, (opj_stream_seek_fn) opj_seek_from_buffer);
+
+    return l_stream;
+}
+
+
+static void opj_free_segmented_file(opj_file_info_t* p_file_info)
+{
+	if (p_file_info && p_file_info->p_file )
+	{
+		fclose(p_file_info->p_file);
+		p_file_info->p_file = NULL;
+	}
+}
+
+static void opj_increment_segment(opj_file_info_t * p_file_info)
+{
+	if (p_file_info == NULL || p_file_info->p_segmentLengths == NULL || p_file_info->p_segmentPositionsList == NULL || p_file_info->curSegment == p_file_info->numSegmentsMinusOne)
+		return;
+
+	if (p_file_info->curPos == (p_file_info->p_segmentPositionsList[p_file_info->curSegment] + p_file_info->p_segmentLengths[p_file_info->curSegment]))
+	{
+		p_file_info->curSegment++;
+		if (p_file_info->curSegment <= p_file_info->numSegmentsMinusOne)
+		{
+			p_file_info->curPos = p_file_info->p_segmentPositionsList[p_file_info->curSegment];
+			if (OPJ_FSEEK(p_file_info->p_file,p_file_info->curPos,SEEK_SET)) 
+			{
+				return;
+			}
+		}
+	}
+}
+
+static OPJ_SIZE_T opj_read_from_segmented_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, opj_file_info_t * p_file_info)
+{
+	OPJ_SIZE_T nb_read;
+	OPJ_SIZE_T bytesInCurrentSegment;
+	OPJ_SIZE_T bytesToRead;
+	OPJ_SIZE_T totalBytesRead;
+	OPJ_SIZE_T bytesLeftToRead;
+	OPJ_SIZE_T bytesRemainingInFile;
+
+	if (p_buffer == NULL || p_nb_bytes == 0 || p_file_info == NULL)
+		return 0;
+
+	//don't try to read more bytes than are available
+	bytesRemainingInFile = p_file_info->dataLength - p_file_info->dataRead;
+	if (p_nb_bytes > bytesRemainingInFile)
+		p_nb_bytes = bytesRemainingInFile;
+
+	totalBytesRead = 0;
+	bytesLeftToRead = p_nb_bytes;
+	while (bytesLeftToRead > 0 && p_file_info->curSegment <= p_file_info->numSegmentsMinusOne)
+	{
+		bytesInCurrentSegment = p_file_info->p_segmentPositionsList[p_file_info->curSegment]  +
+									p_file_info->p_segmentLengths[p_file_info->curSegment]  -  
+									   p_file_info->curPos;
+
+		bytesToRead = (bytesLeftToRead < bytesInCurrentSegment)  ?  bytesLeftToRead  :  bytesInCurrentSegment;
+		nb_read = fread( (OPJ_BYTE*)p_buffer+totalBytesRead,1,bytesToRead,p_file_info->p_file);
+		p_file_info->curPos += nb_read;
+		p_file_info->dataRead += nb_read;
+		totalBytesRead += nb_read;
+		bytesLeftToRead -= nb_read;
+
+		opj_increment_segment(p_file_info);
+		if (!nb_read)
+			break;
+	}
+	return totalBytesRead ? totalBytesRead : (OPJ_SIZE_T)-1;
+}
+
+
+
+static OPJ_SIZE_T opj_get_data_length_from_segmented_file (opj_file_info_t * p_file_info)
+{
+	OPJ_SIZE_T len = 0;
+	int i = 0;
+	for (i = 0; i <= p_file_info->numSegmentsMinusOne; i++) {
+		len += p_file_info->p_segmentLengths[i];
+    }
+    return len;
+}
+
+//assume that segment info has been already set
+static OPJ_BOOL opj_init_segmented_file_info (opj_file_info_t * p_file_info)
+{
+	if (p_file_info == NULL)
+		 return FALSE;
+
+	p_file_info->curPos = p_file_info->p_segmentPositionsList[0];
+	p_file_info->curSegment = 0;
+	p_file_info->dataLength = opj_get_data_length_from_segmented_file(p_file_info);
+	p_file_info->dataRead = 0;
+
+	if (p_file_info->p_file)
+	{
+		if (OPJ_FSEEK(p_file_info->p_file,p_file_info->curPos,SEEK_SET)) 
+		{
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+
+/*
+static OPJ_OFF_T opj_skip_from_segmented_file (OPJ_OFF_T p_nb_bytes, opj_file_info_t * p_file_info)
+{
+	OPJ_SIZE_T bytesInCurrentSegment;
+	OPJ_SIZE_T bytesRemaining;
+
+	if (p_nb_bytes == 0)
+		return 0;
+
+	if (p_file_info == NULL || (p_nb_bytes + p_file_info->dataRead > p_file_info->dataLength) )
+		return -1;
+
+	bytesRemaining = p_nb_bytes;
+	while(p_file_info->curSegment <= p_file_info->numSegmentsMinusOne && bytesRemaining > 0)
+	{
+		bytesInCurrentSegment = p_file_info->p_segmentPositionsList[p_file_info->curSegment]  +
+		                        p_file_info->p_segmentLengths[p_file_info->curSegment]  -  
+								   p_file_info->curPos;
+
+		if (bytesInCurrentSegment > bytesRemaining)  //hoover up all the bytes in this segment, and move to the next one
+		{
+			bytesRemaining -= bytesInCurrentSegment;
+			p_file_info->dataRead += bytesInCurrentSegment;
+			p_file_info->curPos += bytesInCurrentSegment;
+			opj_increment_segment(p_file_info);
+		}
+		else //bingo! we found the segment
+		{
+			bytesRemaining = 0;
+			p_file_info->dataRead += bytesRemaining;
+			p_file_info->curPos += bytesRemaining;
+			opj_increment_segment(p_file_info);
+			if (OPJ_FSEEK(p_file_info->p_file,p_file_info->curPos,SEEK_SET)) {
+				return -1;
+			}
+			return p_nb_bytes;
+		}
+	}
+	return -1;
+}
+
+static OPJ_BOOL opj_seek_from_segmented_file (OPJ_OFF_T p_nb_bytes, opj_file_info_t* p_file_info)
+{
+	opj_file_info_t p_file_info_copy;
+	OPJ_OFF_T offsetFromSeek = -1;
+
+	if (p_file_info == NULL || (p_nb_bytes + p_file_info->dataRead > p_file_info->dataLength) )
+		return -1;
+
+	memcpy(p_file_info, &p_file_info_copy, sizeof(opj_file_info_t));
+	p_file_info_copy.dataRead=0;
+	p_file_info_copy.curSegment = 0;
+	p_file_info_copy.curPos = p_file_info_copy.p_segmentPositionsList[0];
+
+	offsetFromSeek = opj_skip_from_segmented_file(p_nb_bytes, &p_file_info_copy);
+	if (offsetFromSeek != -1)
+	{
+		p_file_info->curPos = p_file_info_copy.curPos;
+		p_file_info->dataRead = p_file_info_copy.dataRead;
+		p_file_info->curSegment = p_file_info_copy.curSegment;
+		return OPJ_TRUE;
+	}
+	return OPJ_FALSE;
+}
+
+*/
+
+
+/*############################################*/
+
+static void opj_free_file_info(opj_file_info_t* p_file_info)
+{
+	if (!p_file_info)
+		return;
+
+	if (p_file_info->p_file )
+	{
+		fclose(p_file_info->p_file );
+		p_file_info->p_file  = NULL;
+	}
+	opj_free(p_file_info);
+}
+
+static OPJ_SIZE_T opj_read_from_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, opj_file_info_t* p_file_info)
+{
+	OPJ_SIZE_T l_nb_read;
+	if (p_file_info->p_segmentPositionsList != NULL)
+	{
+		return opj_read_from_segmented_file(p_buffer, p_nb_bytes, p_file_info);
+	}
+
+
+    l_nb_read = fread(p_buffer,1,p_nb_bytes,p_file_info->p_file);
 	return l_nb_read ? l_nb_read : (OPJ_SIZE_T)-1;
 }
 
-static OPJ_UINT64 opj_get_data_length_from_file (FILE * p_file)
+static OPJ_SIZE_T opj_get_data_length_from_file (opj_file_info_t * p_file_info)
 {
-	OPJ_OFF_T file_length = 0;
+	OPJ_SIZE_T file_length = 0;
+	if (p_file_info->p_segmentPositionsList != NULL)
+		return opj_get_data_length_from_segmented_file(p_file_info);
 
-	OPJ_FSEEK(p_file, 0, SEEK_END);
-	file_length = (OPJ_UINT64)OPJ_FTELL(p_file);
-	OPJ_FSEEK(p_file, 0, SEEK_SET);
+	OPJ_FSEEK(p_file_info->p_file, 0, SEEK_END);
+	file_length = (OPJ_SIZE_T)OPJ_FTELL(p_file_info->p_file);
+	OPJ_FSEEK(p_file_info->p_file, 0, SEEK_SET);
 
 	return file_length;
 }
 
-static OPJ_SIZE_T opj_write_from_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, FILE * p_file)
+static OPJ_SIZE_T opj_write_from_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, opj_file_info_t * p_file_info)
 {
-	return fwrite(p_buffer,1,p_nb_bytes,p_file);
+	return fwrite(p_buffer,1,p_nb_bytes,p_file_info->p_file);
 }
 
-static OPJ_OFF_T opj_skip_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
+static OPJ_OFF_T opj_skip_from_file (OPJ_OFF_T p_nb_bytes, opj_file_info_t * p_user_data)
 {
-	if (OPJ_FSEEK(p_user_data,p_nb_bytes,SEEK_CUR)) {
+	if (OPJ_FSEEK(p_user_data->p_file,p_nb_bytes,SEEK_CUR)) {
 		return -1;
 	}
 
 	return p_nb_bytes;
 }
 
-static OPJ_BOOL opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
+static OPJ_BOOL opj_seek_from_file (OPJ_OFF_T p_nb_bytes, opj_file_info_t * p_user_data)
 {
-	if (OPJ_FSEEK(p_user_data,p_nb_bytes,SEEK_SET)) {
+	if (OPJ_FSEEK(p_user_data->p_file,p_nb_bytes,SEEK_SET)) {
 		return OPJ_FALSE;
 	}
 
 	return OPJ_TRUE;
 }
+
+/*############################################*/
+
+
+
 
 /* ---------------------------------------------------------------------- */
 #ifdef _WIN32
@@ -1040,29 +1320,23 @@ opj_stream_t* OPJ_CALLCONV opj_stream_create_default_file_stream_v3 (const char 
     return opj_stream_create_file_stream_v3(fname, OPJ_J2K_STREAM_CHUNK_SIZE, p_is_read_stream);
 }
 
+opj_stream_t* OPJ_CALLCONV opj_stream_create_default_file_stream_v4 (opj_file_info_t* p_file_info, OPJ_BOOL p_is_read_stream)
+{
+    return opj_stream_create_file_stream_v4(p_file_info, OPJ_J2K_STREAM_CHUNK_SIZE, p_is_read_stream);
+}
+
 opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream (	FILE * p_file, 
 															OPJ_SIZE_T p_size, 
 															OPJ_BOOL p_is_read_stream)
 {
-	opj_stream_t* l_stream = 00;
-
+	opj_file_info_t* p_file_info;
 	if (! p_file) {
 		return NULL;
 	}
+	p_file_info = (opj_file_info_t*)opj_calloc(0, sizeof(opj_file_info_t));
+	p_file_info->p_file = p_file;
 
-	l_stream = opj_stream_create(p_size,p_is_read_stream);
-	if (! l_stream) {
-		return NULL;
-	}
-
-    opj_stream_set_user_data(l_stream, p_file);
-    opj_stream_set_user_data_length(l_stream, opj_get_data_length_from_file(p_file));
-    opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_file);
-    opj_stream_set_write_function(l_stream, (opj_stream_write_fn) opj_write_from_file);
-    opj_stream_set_skip_function(l_stream, (opj_stream_skip_fn) opj_skip_from_file);
-    opj_stream_set_seek_function(l_stream, (opj_stream_seek_fn) opj_seek_from_file);
-    
-    return l_stream;
+	return opj_stream_create_file_stream_v4(p_file_info, p_size, p_is_read_stream);
 }
 
 opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream_v3 (
@@ -1070,32 +1344,64 @@ opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream_v3 (
 		OPJ_SIZE_T p_size, 
         OPJ_BOOL p_is_read_stream)
 {
-    opj_stream_t* l_stream = 00;
-    FILE *p_file;
-    const char *mode;
+	opj_file_info_t* p_file_info;
+	p_file_info = (opj_file_info_t*)opj_calloc(1, sizeof(opj_file_info_t));
+	strcpy(p_file_info->infile, fname);
+	return opj_stream_create_file_stream_v4(p_file_info, p_size, p_is_read_stream);
+}
 
-    if (! fname) {
+
+opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream_v4 (
+        opj_file_info_t* p_file_info, 
+		OPJ_SIZE_T p_size, 
+        OPJ_BOOL p_is_read_stream)
+{
+    opj_stream_t* l_stream = 00;
+    if (! p_file_info) {
         return NULL;
     }
-    
-    if(p_is_read_stream) mode = "rb"; else mode = "wb";
+	if (!p_file_info->p_file)
+	{
+		const char *mode;
+		if(p_is_read_stream) 
+			mode = "rb"; 
+		else
+			mode = "wb";
 
-    p_file = fopen(fname, mode);
+		p_file_info->p_file = fopen(p_file_info->infile, mode);
 
-    if (! p_file) {
-	    return NULL;
-    }
+		if (! p_file_info->p_file) {
+			opj_free(p_file_info);
+			return NULL;
+		}
+	}
+
+	//initialize segmented info
+	if (p_file_info->p_segmentPositionsList != NULL)
+	{
+		if (!opj_init_segmented_file_info(p_file_info))
+		{
+			fclose(p_file_info->p_file);
+			opj_free(p_file_info);
+			return NULL;
+		}
+	}
+
 
     l_stream = opj_stream_create(p_size,p_is_read_stream);
     if (! l_stream) {
-        fclose(p_file);
+        fclose(p_file_info->p_file);
+		opj_free(p_file_info);
         return NULL;
     }
 
-    opj_stream_set_user_data(l_stream, p_file);
-    opj_stream_set_user_data_length(l_stream, opj_get_data_length_from_file(p_file));
-    opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_file);
-    opj_stream_set_write_function(l_stream, (opj_stream_write_fn) opj_write_from_file);
+    opj_stream_set_user_data(l_stream, p_file_info);
+    opj_stream_set_user_data_length(l_stream, opj_get_data_length_from_file(p_file_info));
+	opj_stream_set_free_function(l_stream, (opj_stream_free_user_data_fn) opj_free_file_info);
+	if (p_is_read_stream)
+        opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_file);
+	else
+        opj_stream_set_write_function(l_stream, (opj_stream_write_fn) opj_write_from_file);
     opj_stream_set_skip_function(l_stream, (opj_stream_skip_fn) opj_skip_from_file);
     opj_stream_set_seek_function(l_stream, (opj_stream_seek_fn) opj_seek_from_file);
 

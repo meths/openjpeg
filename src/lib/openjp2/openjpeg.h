@@ -459,6 +459,27 @@ typedef struct opj_dparameters {
 
 } opj_dparameters_t;
 
+typedef struct opj_buffer_info
+{
+    OPJ_BYTE *buf;
+	OPJ_BYTE *cur;
+    OPJ_SIZE_T len;
+} opj_buffer_info_t;
+
+
+typedef struct opj_segmented_file_info
+{
+	char infile[OPJ_PATH_LEN];
+    FILE* p_file;
+	OPJ_SIZE_T dataLength;
+	OPJ_SIZE_T dataRead;
+	int numSegmentsMinusOne;
+	OPJ_OFF_T* p_segmentPositionsList;
+	OPJ_SIZE_T* p_segmentLengths;
+	OPJ_OFF_T curPos;
+	int curSegment;
+} opj_file_info_t;
+
 
 /**
  * JPEG2000 codec V2.
@@ -478,6 +499,12 @@ typedef void * opj_codec_t;
 #define OPJ_STREAM_READ	OPJ_TRUE
 /** The stream was opened for writing. */
 #define OPJ_STREAM_WRITE OPJ_FALSE
+
+
+/*
+ * Callback function prototype for function that frees user data
+ */
+typedef void (* opj_stream_free_user_data_fn) (void * p_user_data) ;
 
 /*
  * Callback function prototype for read function
@@ -1013,7 +1040,15 @@ OPJ_DEPRECATED(OPJ_API void OPJ_CALLCONV opj_stream_destroy(opj_stream_t* p_stre
  * @param	p_stream	the stream to destroy.
  */
 OPJ_API void OPJ_CALLCONV opj_stream_destroy_v3(opj_stream_t* p_stream);
- 
+
+
+/**
+ * Sets the given function to be used as a free function.
+ * @param		p_stream	the stream to modify
+ * @param		p_function	the function to use as a free function.
+*/
+OPJ_API void OPJ_CALLCONV opj_stream_set_free_function(opj_stream_t* p_stream, opj_stream_free_user_data_fn p_function);
+
 /**
  * Sets the given function to be used as a read function.
  * @param		p_stream	the stream to modify
@@ -1072,6 +1107,8 @@ OPJ_DEPRECATED(OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_default_file
 */
 OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_default_file_stream_v3 (const char *fname, OPJ_BOOL p_is_read_stream);
  
+OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_default_file_stream_v4 (opj_file_info_t* p_file_info, OPJ_BOOL p_is_read_stream);
+
 /**
  * FIXME DOC
  * @param p_file            the file stream to operate on
@@ -1090,6 +1127,18 @@ OPJ_DEPRECATED(OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream 
 OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream_v3 (const char *fname, 
                                                                      OPJ_SIZE_T p_buffer_size,
                                                                      OPJ_BOOL p_is_read_stream);
+
+
+OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream_v4 (opj_file_info_t* p_file_info, 
+                                                                     OPJ_SIZE_T p_buffer_size,
+                                                                     OPJ_BOOL p_is_read_stream);
+
+
+OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_buffer_stream(opj_buffer_info_t* p_source_buffer,OPJ_BOOL p_is_read_stream);
+
+OPJ_API opj_stream_t* OPJ_CALLCONV opj_stream_create_segmented_file_stream(opj_file_info_t* p_source_file, OPJ_BOOL p_is_read_stream);
+
+
  
 /* 
 ==========================================================

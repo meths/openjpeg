@@ -7,13 +7,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
- * Class:     org_openJpeg_OpenJPEGJavaDecoder
- * Method:    internalDecodeJ2KtoImage
- * Signature: ([Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2KtoImage
-  (JNIEnv *, jobject, jobjectArray);
+
+JNIEXPORT jlong JNICALL Java_org_openJpeg_OpenJPEGJavaEncoder_internalDecodeImageToJ2K(JNIEnv *, jobject, jobjectArray);
+JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalGetDecodeFormat(JNIEnv *env, jobject obj,jobjectArray javaParameters) ;
 
 #ifdef __cplusplus
 }

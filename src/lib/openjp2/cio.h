@@ -91,6 +91,12 @@ typedef struct opj_stream_private
 	OPJ_UINT64 				m_user_data_length;
 
 	/**
+	 * Pointer to actual free function (NULL at the initialization of the cio)
+	 */
+
+	opj_stream_free_user_data_fn     m_free_fn;
+
+	/**
 	 * Pointer to actual read function (NULL at the initialization of the cio.
 	 */
 	opj_stream_read_fn		m_read_fn;

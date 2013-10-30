@@ -16,6 +16,9 @@ import javax.imageio.spi.ImageReaderWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 
+import org.codecCentral.imageio.generic.NativeUtilities;
+import org.codecCentral.imageio.generic.Utils;
+
 public class JP2KOpenJpegImageReaderSpi extends ImageReaderSpi {
 
 
@@ -23,7 +26,7 @@ public class JP2KOpenJpegImageReaderSpi extends ImageReaderSpi {
 	final static String LibPath = "openjp2";
 	
 	static {
-        OpenJpegUtilities.loadOpenJpeg(LibPath, JNILibPath);
+        NativeUtilities.loadLibraries(LibPath, JNILibPath);
     }
 	
     protected boolean registered = false;
@@ -152,7 +155,7 @@ public class JP2KOpenJpegImageReaderSpi extends ImageReaderSpi {
         }
 
         registered = true;
-        if (!OpenJpegUtilities.isOpenJpegAvailable(LibPath, JNILibPath)) {
+        if (!NativeUtilities.areLibrariesAvailable(LibPath, JNILibPath)) {
             final IIORegistry iioRegistry = (IIORegistry) registry;
             final Class<ImageReaderSpi> spiClass = ImageReaderSpi.class;
             final Iterator<ImageReaderSpi> iter = iioRegistry.getServiceProviders(spiClass,true);
@@ -165,7 +168,7 @@ public class JP2KOpenJpegImageReaderSpi extends ImageReaderSpi {
             return;
         }
         
-        final List<ImageReaderWriterSpi> readers = OpenJpegUtilities.getJDKImageReaderWriterSPI(registry,"jpeg2000", true);
+        final List<ImageReaderWriterSpi> readers = Utils.getJDKImageReaderWriterSPI(registry,"jpeg2000", true);
         for (ImageReaderWriterSpi elem:readers) {
         	if (elem instanceof ImageReaderSpi){
 	            final ImageReaderSpi spi = (ImageReaderSpi) elem;;

@@ -29,12 +29,14 @@ package org.openJpeg;
 
 import java.util.Vector;
 
+import org.codecCentral.imageio.generic.EncoderBase;
+
 /**
  * This class encodes one image into the J2K format, using the OpenJPEG.org
  * library. To be able to log messages, the called must register a
  * IJavaJ2KEncoderLogger object.
  */
-public class OpenJPEGJavaEncoder extends OpenJPEGJavaBase {
+public class OpenJPEGJavaEncoder extends EncoderBase {
 
 	public interface IJavaJ2KEncoderLogger {
 		public void logEncoderMessage(String message);
@@ -113,7 +115,7 @@ public class OpenJPEGJavaEncoder extends OpenJPEGJavaBase {
 	 * The nbResolutions, nbLayers and if needed the float[] psnrLayers or
 	 * ratioLayers must also be filled before calling this method.
 	 */
-	public void encodeImageToJ2K() {
+	public void encode() {
 		int comressBufferSize = width * height * depth / 8;
 		// Need to allocate / reallocate the compressed stream buffer ? (size =
 		// max possible size = original image size)
@@ -169,7 +171,7 @@ public class OpenJPEGJavaEncoder extends OpenJPEGJavaBase {
 		}
 		logMessage("Encoder additional arguments = " + arrayToString(arguments));
 		long startTime = (new java.util.Date()).getTime();
-		compressedStreamLength = internalEncodeImageToJ2K(arguments);
+		compressedStreamLength = internalEncode(arguments);
 		logMessage("compression time = "
 				+ ((new java.util.Date()).getTime() - startTime) + " msec");
 	}
@@ -180,6 +182,12 @@ public class OpenJPEGJavaEncoder extends OpenJPEGJavaBase {
 	 * @return the codestream length.
 	 */
 	private native long internalEncodeImageToJ2K(String[] parameters);
+	
+	protected long internalEncode(String[] parameters)
+	{
+		return internalEncodeImageToJ2K(parameters);
+		
+	}
 
 	/**
 	 * Return the ratioLayers, i.e. the compression ratio for each quality
@@ -233,6 +241,7 @@ public class OpenJPEGJavaEncoder extends OpenJPEGJavaBase {
 
 	public void reset() {
 		super.reset();
+		nbResolutions = -1;
 		ratioLayers = null;
 		psnrLayers = null;
 		compressedIndex = null;

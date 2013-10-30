@@ -9,16 +9,13 @@ import java.awt.image.DataBufferUShort;
 import java.awt.image.IndexColorModel;
 import java.awt.image.RenderedImage;
 import java.awt.image.SampleModel;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
@@ -26,6 +23,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 
+import org.codecCentral.imageio.generic.Utils;
 import org.openJpeg.JP2KOpenJpegImageWriteParam.Compression;
 import org.openJpeg.JP2KOpenJpegImageWriteParam.ProgressionOrder;
 
@@ -461,13 +459,13 @@ public class JP2KOpenJpegImageWriter extends ImageWriter {
         if (buff instanceof DataBufferUShort)
         {
         	encoder.setImage16(((DataBufferUShort)buff).getData());
-        	encoder.depth = 16;
+        	encoder.setDepth( 16);
         }
   
-		encoder.width = sourceWidth;
-		encoder.height = sourceHeight;
+		encoder.setWidth( sourceWidth);
+		encoder.setHeight(sourceHeight);
 		encoder.setNbResolutions(6);
-	    encoder.encodeImageToJ2K();
+	    encoder.encode();
     	
     	
     	 writeOnStream();
@@ -480,8 +478,8 @@ public class JP2KOpenJpegImageWriter extends ImageWriter {
     private void writeOnStream() throws IOException {
     	if (outputStream == null)
     		return;
-    	int size = (int)encoder.getCompressedStreamLength()/(encoder.depth/8);
-    	outputStream.write(encoder.compressedStream, 0, size);
+    	int size = (int)encoder.getCompressedStreamLength()/(encoder.getDepth()/8);
+    	outputStream.write(encoder.getCompressedStream(), 0, size);
         
     }
 

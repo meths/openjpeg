@@ -6,8 +6,6 @@ set(openjpegjni_SRCS
   OpenJPEGJava.c
   ${OPENJPEG_SOURCE_DIR}/src/bin/common/opj_getopt.c
   ${OPENJPEG_SOURCE_DIR}/src/bin/common/color.c
-  ${OPENJPEG_SOURCE_DIR}/src/bin/jp2/convert.c
-  ${OPENJPEG_SOURCE_DIR}/src/bin/jp2/index.c
 
   )
 

@@ -97,8 +97,6 @@ typedef struct decode_info
 	jlong*     bodySegmentLengths;
 	OPJ_SIZE_T *opjSegmentLengths;
 
-	OPJ_BYTE*  allSegmentsDump;
-
 	OPJ_BOOL   deleteImage;
 
 } decode_info_t;
@@ -445,13 +443,6 @@ static void release(decode_info_t *decodeInfo)
 		opj_free(decodeInfo->opjSegmentLengths);
 		decodeInfo->opjSegmentLengths = NULL;
 	}
-
-	if (decodeInfo->allSegmentsDump)
-	{
-		opj_free(decodeInfo->allSegmentsDump);
-		decodeInfo->allSegmentsDump = NULL;
-
-	}
 }
 
 static OPJ_BOOL catchAndRelease(decode_info_t *decodeInfo)
@@ -631,7 +622,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 	/* Preparing the transfer of the codestream from Java to C*/
 	/*printf("C: before transfering codestream\n");*/
 	fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
-	if((*decodeInfo.env)->ExceptionOccurred(decodeInfo.env))
+	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
 	decodeInfo.jbaCompressed = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);

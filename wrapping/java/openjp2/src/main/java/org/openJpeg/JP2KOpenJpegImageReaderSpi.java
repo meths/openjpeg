@@ -5,6 +5,7 @@ package org.openJpeg;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -22,11 +23,11 @@ import org.codecCentral.imageio.generic.Utils;
 public class JP2KOpenJpegImageReaderSpi extends ImageReaderSpi {
 
 
-	final static String JNILibPath = "openjpegjni";
-	final static String LibPath = "openjp2";
-	
+	static List<String> libraries;
+
 	static {
-        NativeUtilities.loadLibraries(LibPath, JNILibPath);
+		libraries = Arrays.asList("openjpegjni", "openjp2");
+        NativeUtilities.loadLibraries(libraries);
     }
 	
     protected boolean registered = false;
@@ -155,7 +156,7 @@ public class JP2KOpenJpegImageReaderSpi extends ImageReaderSpi {
         }
 
         registered = true;
-        if (!NativeUtilities.areLibrariesAvailable(LibPath, JNILibPath)) {
+        if (!NativeUtilities.areLibrariesAvailable(libraries)) {
             final IIORegistry iioRegistry = (IIORegistry) registry;
             final Class<ImageReaderSpi> spiClass = ImageReaderSpi.class;
             final Iterator<ImageReaderSpi> iter = iioRegistry.getServiceProviders(spiClass,true);

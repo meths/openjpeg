@@ -364,7 +364,7 @@ static void release(decode_info_t *decodeInfo)
 		{
 			if ((decodeInfo->argv)[i] != NULL)
 			{
-				(*decodeInfo->env)->ReleaseStringUTFChars(decodeInfo->env, (*decodeInfo->env)->GetObjectArrayElement(decodeInfo->env, decodeInfo->javaParameters, i-1), (decodeInfo->argv)[i]);
+				(*decodeInfo->env)->ReleaseStringUTFChars(decodeInfo->env, (*decodeInfo->env)->GetObjectArrayElement(decodeInfo->env, decodeInfo->javaParameters, i), (decodeInfo->argv)[i]);
 			}
 
 		}
@@ -598,6 +598,8 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 	/* JNI reference to the calling class 
 	*/
 	klass = (*decodeInfo.env)->GetObjectClass(decodeInfo.env, obj);
+	if ( catchAndRelease(&decodeInfo) == -1)
+		return -1;
 	if (klass == 0)
 	{
 		fprintf(stderr,"GetObjectClass returned zero");
@@ -611,11 +613,11 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 	msgErrorCallback_vars.env = decodeInfo.env;
 	msgErrorCallback_vars.jobj = &obj;
 	msgErrorCallback_vars.message_mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "logMessage", "(Ljava/lang/String;)V");
-	if((*decodeInfo.env)->ExceptionOccurred(decodeInfo.env))
+	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
 	msgErrorCallback_vars.error_mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "logError", "(Ljava/lang/String;)V");
-	if((*decodeInfo.env)->ExceptionOccurred(decodeInfo.env))
+	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
 	

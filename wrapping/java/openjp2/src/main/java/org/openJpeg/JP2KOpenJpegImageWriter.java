@@ -23,14 +23,13 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 
+import org.codecCentral.imageio.generic.GenericImageWriter;
 import org.codecCentral.imageio.generic.Utils;
 import org.openJpeg.JP2KOpenJpegImageWriteParam.Compression;
 import org.openJpeg.JP2KOpenJpegImageWriteParam.ProgressionOrder;
 
-public class JP2KOpenJpegImageWriter extends ImageWriter {
+public class JP2KOpenJpegImageWriter extends GenericImageWriter {
 	
-	
-	private OpenJPEGJavaEncoder encoder;
     
     /** The LOGGER for this class. */
     private static final Logger LOGGER = Logger.getLogger("org.openJpeg.imageio_openjpeg");
@@ -69,7 +68,7 @@ public class JP2KOpenJpegImageWriter extends ImageWriter {
 
     private final static int MIN_BUFFER_SIZE = 1024 * 1024;
 
-    private ImageOutputStream outputStream = null;
+
 
     /**
      * Static initialization
@@ -459,29 +458,19 @@ public class JP2KOpenJpegImageWriter extends ImageWriter {
         if (buff instanceof DataBufferUShort)
         {
         	encoder.setImage16(((DataBufferUShort)buff).getData());
-        	encoder.setDepth( 16);
         }
   
+        encoder.setBitsPerSample(image.getRenderedImage().getColorModel().getPixelSize());
 		encoder.setWidth( sourceWidth);
 		encoder.setHeight(sourceHeight);
-		encoder.setNbResolutions(6);
+		((OpenJPEGJavaEncoder)encoder).setNbResolutions(6);
 	    encoder.encode();
     	
     	
     	 writeOnStream();
     }
 
-    /**
-     * Write back the compressed JP2 file to the provided output stream.
-     * @throws IOException
-     */
-    private void writeOnStream() throws IOException {
-    	if (outputStream == null)
-    		return;
-    	int size = (int)encoder.getCompressedStreamLength()/(encoder.getDepth()/8);
-    	outputStream.write(encoder.getCompressedStream(), 0, size);
-        
-    }
+
 
  
 }

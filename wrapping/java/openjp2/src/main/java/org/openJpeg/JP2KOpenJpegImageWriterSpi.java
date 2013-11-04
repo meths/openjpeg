@@ -9,7 +9,9 @@ import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 
-public class JP2KOpenJpegImageWriterSpi extends ImageWriterSpi {
+import org.codecCentral.imageio.generic.GenericImageWriterSpi;
+
+public class JP2KOpenJpegImageWriterSpi extends GenericImageWriterSpi {
 
     static final String[] suffixes = { "JP2", "J2C" };
 

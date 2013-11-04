@@ -360,7 +360,7 @@ static void release(decode_info_t *decodeInfo)
 	if (decodeInfo->argv)
 	{
 		int i;
-		for(i = 1; i < decodeInfo->argc; i++)
+		for(i = 0; i < decodeInfo->argc; i++)
 		{
 			if ((decodeInfo->argv)[i] != NULL)
 			{
@@ -1098,6 +1098,15 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 				return -1;
 
 			(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, height);
+			if ( catchAndRelease(&decodeInfo) == -1)
+				return -1;
+
+
+			fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass, "bitsPerSample", "I");
+			if ( catchAndRelease(&decodeInfo) == -1)
+				return -1;
+
+			(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, decodeInfo.image->comps[0].prec);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 

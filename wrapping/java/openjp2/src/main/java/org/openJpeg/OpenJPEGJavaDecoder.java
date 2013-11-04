@@ -40,19 +40,18 @@ public class OpenJPEGJavaDecoder extends DecoderBase {
 			if (image8 != null)
 			{
 				encoder.setImage8(image8);
-				encoder.setDepth( 8);
 			}
 			else if (image16 != null)
 			{
 				encoder.setImage16(image16);
-				encoder.setDepth( 16);				
+		
 				
 			}
 			else if (image24 != null)
 			{
 				encoder.setImage24(image24);
-				encoder.setDepth( 24);
 			}
+			 encoder.setBitsPerSample(bitsPerSample);
 			encoder.setWidth( width);
 			encoder.setHeight(height);
 			encoder.setNbResolutions(6);

@@ -1602,7 +1602,7 @@ static char* create_index_into_byte_array(opj_codestream_info_t *cstr_info, int*
    ------------ Get the image byte[] from the Java object -------------------*/
 
 static opj_image_t* loadImage(opj_cparameters_t *parameters, JNIEnv *env, jobject obj, jclass cls) {
-	int i,max,shift,w,h,depth;
+	int i,max,shift,w,h,depth, bitsPerSample;
 	opj_image_t * img = NULL;
 	int compno, numcomps;
 	opj_image_t * image = NULL;
@@ -1629,9 +1629,12 @@ static opj_image_t* loadImage(opj_cparameters_t *parameters, JNIEnv *env, jobjec
 	ji = (*env)->GetIntField(env, obj, fid);
 	h = ji;
 	
-	fid = (*env)->GetFieldID(env, cls,"depth", "I");
+	fid = (*env)->GetFieldID(env, cls,"bitsPerSample", "I");
 	ji = (*env)->GetIntField(env, obj, fid);
-	depth = ji;
+	bitsPerSample = ji;
+	depth = ((bitsPerSample + 7)/8)*8;
+	numcomps = 0;
+
 
 	/* Read the image*/
 	if (depth <=16) {
@@ -1915,15 +1918,6 @@ JNIEXPORT jlong JNICALL Java_org_openJpeg_OpenJPEGJavaEncoder_internalEncodeImag
 	parse_cmdline_encoder_rc =  parse_cmdline_encoder(argc, argv, &parameters,&img_fol);
 	encodeToFile = parameters.outfile && parameters.outfile[0] != '\0';
 
-	/* Release the Java arguments array*/
-	for (i=1; i<argc; i++)
-	{
-		if (argv[i])
-			(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, javaParameters, i-1), argv[i]);
-	}
-		
-	free(argv);
-	argv = NULL;
 	if (parse_cmdline_encoder_rc == 1)
 	  return -1;
 	

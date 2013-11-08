@@ -356,6 +356,8 @@ static int getDecodeFormat(const char* fileName, OPJ_OFF_T offsetToData)
 }
 static void release(decode_info_t *decodeInfo)
 {
+	JNIEnv* env = decodeInfo->env;
+
 	/* Release the Java arguments array:*/
 	if (decodeInfo->argv)
 	{
@@ -364,7 +366,7 @@ static void release(decode_info_t *decodeInfo)
 		{
 			if ((decodeInfo->argv)[i] != NULL)
 			{
-				(*decodeInfo->env)->ReleaseStringUTFChars(decodeInfo->env, (*decodeInfo->env)->GetObjectArrayElement(decodeInfo->env, decodeInfo->javaParameters, i), (decodeInfo->argv)[i]);
+				(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, decodeInfo->javaParameters, i), (decodeInfo->argv)[i]);
 			}
 
 		}
@@ -394,40 +396,40 @@ static void release(decode_info_t *decodeInfo)
 		
 	if (decodeInfo->jba  && decodeInfo->jbBody )
 	{
-		(*decodeInfo->env)->ReleaseByteArrayElements(decodeInfo->env, decodeInfo->jba, decodeInfo->jbBody, 0);
+		(*env)->ReleaseByteArrayElements(decodeInfo->env, decodeInfo->jba, decodeInfo->jbBody, 0);
 		decodeInfo->jba =NULL;
 		decodeInfo->jbBody = NULL;
 	}
 	if (decodeInfo->jsa && decodeInfo->jsBody )
 	{
-		(*decodeInfo->env)->ReleaseShortArrayElements(decodeInfo->env, decodeInfo->jsa, decodeInfo->jsBody, 0);
+		(*env)->ReleaseShortArrayElements(env, decodeInfo->jsa, decodeInfo->jsBody, 0);
 		decodeInfo->jsa =NULL;
 		decodeInfo->jsBody = NULL;
 	}
 	if (decodeInfo->jia && decodeInfo->jiBody)
 	{
-		(*decodeInfo->env)->ReleaseIntArrayElements(decodeInfo->env, decodeInfo->jia, decodeInfo->jiBody, 0);
+		(*env)->ReleaseIntArrayElements(env, decodeInfo->jia, decodeInfo->jiBody, 0);
 		decodeInfo->jia =NULL;
 		decodeInfo->jiBody = NULL;
 	}
 
 	if (decodeInfo->jbaCompressed &&  decodeInfo->jbBodyCompressed)
 	{
-		(*decodeInfo->env)->ReleaseByteArrayElements(decodeInfo->env, decodeInfo->jbaCompressed, decodeInfo->jbBodyCompressed, 0);
+		(*env)->ReleaseByteArrayElements(env, decodeInfo->jbaCompressed, decodeInfo->jbBodyCompressed, 0);
 		decodeInfo->jbaCompressed = NULL;
 		decodeInfo->jbBodyCompressed = NULL;
 	}
 
 	if (decodeInfo->segmentPositions &&  decodeInfo->bodySegmentPositions)
 	{
-		(*decodeInfo->env)->ReleaseLongArrayElements(decodeInfo->env, decodeInfo->segmentPositions, decodeInfo->bodySegmentPositions, 0);
+		(*env)->ReleaseLongArrayElements(env, decodeInfo->segmentPositions, decodeInfo->bodySegmentPositions, 0);
 		decodeInfo->segmentPositions = NULL;
 		decodeInfo->bodySegmentPositions = NULL;
 	}
 
 	if (decodeInfo->segmentLengths &&  decodeInfo->bodySegmentLengths)
 	{
-		(*decodeInfo->env)->ReleaseLongArrayElements(decodeInfo->env, decodeInfo->segmentLengths, decodeInfo->bodySegmentLengths, 0);
+		(*env)->ReleaseLongArrayElements(env, decodeInfo->segmentLengths, decodeInfo->bodySegmentLengths, 0);
 		decodeInfo->segmentLengths = NULL;
 		decodeInfo->bodySegmentLengths = NULL;
 	}
@@ -475,7 +477,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalGetDecodeFo
 	decodeInfo.env = env;
 	decodeInfo.javaParameters = javaParameters;
 
-	decodeInfo.argc = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.javaParameters);
+	decodeInfo.argc = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.javaParameters);
 	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
@@ -485,28 +487,28 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalGetDecodeFo
 
 		/* JNI reference to the calling class 
 		*/
-		klass = (*decodeInfo.env)->GetObjectClass(decodeInfo.env, obj);
+		klass = (*env)->GetObjectClass(decodeInfo.env, obj);
 		if (klass == 0)
 		{
 			fprintf(stderr,"GetObjectClass returned zero");
 			return -1;
 
 		}
-		fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
-		if((*decodeInfo.env)->ExceptionOccurred(decodeInfo.env))
+		fid = (*env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
+		if((*env)->ExceptionOccurred(decodeInfo.env))
 			return -1;
 
-		decodeInfo.jbaCompressed = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+		decodeInfo.jbaCompressed = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
 		if (decodeInfo.jbaCompressed != NULL)
 		{
-			buf_info.len = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.jbaCompressed);
+			buf_info.len = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.jbaCompressed);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			decodeInfo.jbBodyCompressed = (*decodeInfo.env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jbaCompressed, &isCopy);
+			decodeInfo.jbBodyCompressed = (*env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jbaCompressed, &isCopy);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
@@ -526,12 +528,12 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalGetDecodeFo
 		for(i = 0; i < decodeInfo.argc; i++) 
 		{
 			decodeInfo.argv[i] = NULL;
-			object = (*decodeInfo.env)->GetObjectArrayElement(env, javaParameters, i);
+			object = (*env)->GetObjectArrayElement(env, javaParameters, i);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 			if (object != NULL)
 			{
-				decodeInfo.argv[i] = (*decodeInfo.env)->GetStringUTFChars(env, object, &isCopy);
+				decodeInfo.argv[i] = (*env)->GetStringUTFChars(env, object, &isCopy);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 			}
@@ -566,11 +568,10 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 	opj_dparameters_t parameters;
 	OPJ_BOOL hasFile = OPJ_FALSE;
-	int *red, *green, *blue, *alpha;
+
 	opj_buffer_info_t buf_info;
 	int i, decod_format;
 	int width, height;
-	int addR, addG,addB, addA, shiftR, shiftG, shiftB, shiftA;
 	OPJ_BOOL hasAlpha, fails = OPJ_FALSE;
 	OPJ_CODEC_FORMAT codec_format;
 	unsigned char rc, gc, bc, ac;
@@ -597,7 +598,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 	/* JNI reference to the calling class 
 	*/
-	klass = (*decodeInfo.env)->GetObjectClass(decodeInfo.env, obj);
+	klass = (*env)->GetObjectClass(decodeInfo.env, obj);
 	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 	if (klass == 0)
@@ -612,32 +613,32 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 	*/
 	msgErrorCallback_vars.env = decodeInfo.env;
 	msgErrorCallback_vars.jobj = &obj;
-	msgErrorCallback_vars.message_mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "logMessage", "(Ljava/lang/String;)V");
+	msgErrorCallback_vars.message_mid = (*env)->GetMethodID(decodeInfo.env, klass, "logMessage", "(Ljava/lang/String;)V");
 	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
-	msgErrorCallback_vars.error_mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "logError", "(Ljava/lang/String;)V");
+	msgErrorCallback_vars.error_mid = (*env)->GetMethodID(decodeInfo.env, klass, "logError", "(Ljava/lang/String;)V");
 	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
 	
 	/* Preparing the transfer of the codestream from Java to C*/
 	/*printf("C: before transfering codestream\n");*/
-	fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
+	fid = (*env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
 	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
-	decodeInfo.jbaCompressed = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+	decodeInfo.jbaCompressed = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 	if ( catchAndRelease(&decodeInfo) == -1)
 		return -1;
 
 	if (decodeInfo.jbaCompressed != NULL)
 	{
-		buf_info.len = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.jbaCompressed);
+		buf_info.len = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.jbaCompressed);
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
-		decodeInfo.jbBodyCompressed = (*decodeInfo.env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jbaCompressed, &isCopy);
+		decodeInfo.jbBodyCompressed = (*env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jbaCompressed, &isCopy);
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
@@ -650,7 +651,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 		/* Get the String[] containing the parameters, 
 		*  and converts it into a char** to simulate command line arguments.
 		*/
-		arraySize = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.javaParameters);
+		arraySize = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.javaParameters);
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
@@ -670,15 +671,16 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 		for(i = 0; i < decodeInfo.argc; i++) 
 		{
 			decodeInfo.argv[i] = NULL;
-			object = (*decodeInfo.env)->GetObjectArrayElement(decodeInfo.env, decodeInfo.javaParameters, i);
+			object = (*env)->GetObjectArrayElement(decodeInfo.env, decodeInfo.javaParameters, i);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 			if (object != NULL)
 			{
-				decodeInfo.argv[i] = (*decodeInfo.env)->GetStringUTFChars(decodeInfo.env, object, &isCopy);
+				decodeInfo.argv[i] = (*env)->GetStringUTFChars(decodeInfo.env, object, &isCopy);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 			}
+			 (*env)->DeleteLocalRef(env, object);
 
 		}
 	#ifdef DEBUG_SHOW_ARGS
@@ -700,11 +702,11 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 		//now check if it is segments
 		/*printf("C: before transfering codestream\n");*/
-		fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"segmentPositions", "[J");
+		fid = (*env)->GetFieldID(decodeInfo.env, klass,"segmentPositions", "[J");
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
-		decodeInfo.segmentPositions = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+		decodeInfo.segmentPositions = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
@@ -716,30 +718,30 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 			OPJ_SIZE_T dataCount=0;
 			OPJ_SIZE_T readCount=0;
 
-			numPositions = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.segmentPositions);
+			numPositions = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.segmentPositions);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			decodeInfo.bodySegmentPositions = (*decodeInfo.env)->GetLongArrayElements(decodeInfo.env, decodeInfo.segmentPositions, &isCopy);
+			decodeInfo.bodySegmentPositions = (*env)->GetLongArrayElements(decodeInfo.env, decodeInfo.segmentPositions, &isCopy);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"segmentLengths", "[J");
+			fid = (*env)->GetFieldID(decodeInfo.env, klass,"segmentLengths", "[J");
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			decodeInfo.segmentLengths = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+			decodeInfo.segmentLengths = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
 			if (decodeInfo.segmentLengths != NULL)
 			{
 
-				numLengths = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.segmentLengths);
+				numLengths = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.segmentLengths);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				decodeInfo.bodySegmentLengths = (*decodeInfo.env)->GetLongArrayElements(decodeInfo.env, decodeInfo.segmentLengths, &isCopy);
+				decodeInfo.bodySegmentLengths = (*env)->GetLongArrayElements(decodeInfo.env, decodeInfo.segmentLengths, &isCopy);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 			}
@@ -780,21 +782,21 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 	{
 		/* Preparing the transfer of the codestream from Java to C*/
 		/*printf("C: before transfering codestream\n");*/
-		fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
+		fid = (*env)->GetFieldID(decodeInfo.env, klass,"compressedStream", "[B");
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
-		decodeInfo.jbaCompressed = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+		decodeInfo.jbaCompressed = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 		if ( catchAndRelease(&decodeInfo) == -1)
 			return -1;
 
 		if (decodeInfo.jbaCompressed != NULL)
 		{
-			buf_info.len = (*decodeInfo.env)->GetArrayLength(decodeInfo.env, decodeInfo.jbaCompressed);
+			buf_info.len = (*env)->GetArrayLength(decodeInfo.env, decodeInfo.jbaCompressed);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			decodeInfo.jbBodyCompressed = (*decodeInfo.env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jbaCompressed, &isCopy);
+			decodeInfo.jbBodyCompressed = (*env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jbaCompressed, &isCopy);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
@@ -867,38 +869,38 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					break;
 				}
 
-				fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"userChangedTile", "I");
+				fid = (*env)->GetFieldID(decodeInfo.env, klass,"userChangedTile", "I");
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				user_changed_tile = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+				user_changed_tile = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"userChangedReduction", "I");
+				fid = (*env)->GetFieldID(decodeInfo.env, klass,"userChangedReduction", "I");
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				user_changed_reduction = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+				user_changed_reduction = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
 				if(user_changed_tile && user_changed_reduction)
 				{
 					int reduction;
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"tileIn", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"tileIn", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					tile_index = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+					tile_index = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"reductionIn", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"reductionIn", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					reduction = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+					reduction = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
@@ -911,19 +913,19 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					break;
 				}
 
-				fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"maxTiles", "I");
+				fid = (*env)->GetFieldID(decodeInfo.env, klass,"maxTiles", "I");
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				max_tiles = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+				max_tiles = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"maxReduction", "I");
+				fid = (*env)->GetFieldID(decodeInfo.env, klass,"maxReduction", "I");
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				max_reduction = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+				max_reduction = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
@@ -938,35 +940,35 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					max_tiles = cstr->tw * cstr->th;
 
 					//    FLImage_put_max_tile_and_reduction(max_tiles, max_factor);
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"maxTiles", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"maxTiles", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, max_tiles);
+					(*env)->SetIntField(decodeInfo.env, obj, fid, max_tiles);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"maxReduction", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"maxReduction", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, max_reduction);
+					(*env)->SetIntField(decodeInfo.env, obj, fid, max_reduction);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"userChangedTile", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"userChangedTile", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, 1);
+					(*env)->SetIntField(decodeInfo.env, obj, fid, 1);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"userChangedReduction", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"userChangedReduction", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, 1);
+					(*env)->SetIntField(decodeInfo.env, obj, fid, 1);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 				}
@@ -978,45 +980,45 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 					x0 = y0 = x1 = y1 = 0;
 
-					fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"userChangedArea", "I");
+					fid = (*env)->GetFieldID(decodeInfo.env, klass,"userChangedArea", "I");
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
-					user_changed_area = (int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+					user_changed_area = (int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 					if ( catchAndRelease(&decodeInfo) == -1)
 						return -1;
 
 					if(user_changed_area)
 					{
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"areaX0", "I");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"areaX0", "I");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						x0 = (unsigned int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+						x0 = (unsigned int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"areaY0", "I");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"areaY0", "I");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						y0 = (unsigned int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+						y0 = (unsigned int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"areaX1", "I");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"areaX1", "I");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						x1 = (unsigned int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+						x1 = (unsigned int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"areaY1", "I");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"areaY1", "I");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						y1 = (unsigned int) (*decodeInfo.env)->GetIntField(decodeInfo.env, obj, fid);
+						y1 = (unsigned int) (*env)->GetIntField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 					}
@@ -1087,28 +1089,36 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 			height = decodeInfo.image->comps[0].h;
 			/* Set JAVA width and height:
 			*/
-			fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass, "width", "I");
+			fid = (*env)->GetFieldID(decodeInfo.env, klass, "width", "I");
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, width);
+			(*env)->SetIntField(decodeInfo.env, obj, fid, width);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass, "height", "I");
+			fid = (*env)->GetFieldID(decodeInfo.env, klass, "height", "I");
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, height);
+			(*env)->SetIntField(decodeInfo.env, obj, fid, height);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
 
-			fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass, "bitsPerSample", "I");
+			fid = (*env)->GetFieldID(decodeInfo.env, klass, "bitsPerSample", "I");
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
-			(*decodeInfo.env)->SetIntField(decodeInfo.env, obj, fid, decodeInfo.image->comps[0].prec);
+			(*env)->SetIntField(decodeInfo.env, obj, fid, decodeInfo.image->comps[0].prec);
+			if ( catchAndRelease(&decodeInfo) == -1)
+				return -1;
+
+			fid = (*env)->GetFieldID(decodeInfo.env, klass, "samplesPerPixel", "I");
+			if ( catchAndRelease(&decodeInfo) == -1)
+				return -1;
+
+			(*env)->SetIntField(decodeInfo.env, obj, fid, decodeInfo.image->numcomps);
 			if ( catchAndRelease(&decodeInfo) == -1)
 				return -1;
 
@@ -1129,10 +1139,9 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 				) /* GA */
 			{
 				jmethodID mid;	
-				int pix, has_alpha4, has_alpha2, has_rgb;
+				int  has_alpha4, has_alpha2, has_rgb;
+				int *red, *green, *blue, *alpha;
 
-				shiftA = shiftR = shiftG = shiftB = 0;
-				addA = addR = addG = addB = 0;
 				alpha = NULL;
 
 				has_rgb = (decodeInfo.image->numcomps == 3);
@@ -1142,24 +1151,6 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 				if(has_rgb)
 				{
-					if(decodeInfo.image->comps[0].prec > 8)
-						shiftR = decodeInfo.image->comps[0].prec - 8;
-
-					if(decodeInfo.image->comps[1].prec > 8)
-						shiftG = decodeInfo.image->comps[1].prec - 8;
-
-					if(decodeInfo.image->comps[2].prec > 8)
-						shiftB = decodeInfo.image->comps[2].prec - 8;
-
-					if(decodeInfo.image->comps[0].sgnd)
-						addR = (1 << (decodeInfo.image->comps[0].prec - 1));
-
-					if(decodeInfo.image->comps[1].sgnd)
-						addG = (1 << (decodeInfo.image->comps[1].prec - 1));
-
-					if(decodeInfo.image->comps[2].sgnd)
-						addB = (1 << (decodeInfo.image->comps[2].prec - 1));
-
 					red = decodeInfo.image->comps[0].data;
 					green = decodeInfo.image->comps[1].data;
 					blue = decodeInfo.image->comps[2].data;
@@ -1167,44 +1158,25 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					if(has_alpha4)
 					{
 						alpha = decodeInfo.image->comps[3].data;
-
-						if(decodeInfo.image->comps[3].prec > 8)
-							shiftA = decodeInfo.image->comps[3].prec - 8;
-
-						if(decodeInfo.image->comps[3].sgnd)
-							addA = (1 << (decodeInfo.image->comps[3].prec - 1));
 					}
 
 				}	/* if(has_rgb) */
 				else
 				{
-					if(decodeInfo.image->comps[0].prec > 8)
-						shiftR = decodeInfo.image->comps[0].prec - 8;
-
-					if(decodeInfo.image->comps[0].sgnd)
-						addR = (1 << (decodeInfo.image->comps[0].prec - 1));
-
 					red = green = blue = decodeInfo.image->comps[0].data;
-
 					if(has_alpha2)
 					{
 						alpha = decodeInfo.image->comps[1].data;
-
-						if(decodeInfo.image->comps[1].prec > 8)
-							shiftA = decodeInfo.image->comps[1].prec - 8;
-
-						if(decodeInfo.image->comps[1].sgnd)
-							addA = (1 << (decodeInfo.image->comps[1].prec - 1));
 					}
 				}	/* if(has_rgb) */
 
 				/* Allocate JAVA memory:
 				*/
-				mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "alloc24", "()V");
+				mid = (*env)->GetMethodID(decodeInfo.env, klass, "alloc24", "()V");
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				(*decodeInfo.env)->CallVoidMethod(decodeInfo.env, obj, mid);
+				(*env)->CallVoidMethod(decodeInfo.env, obj, mid);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
@@ -1212,67 +1184,38 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 				/* Get the pointer to the Java structure where the data must be copied
 				*/
-				fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"image24", "[I");
+				fid = (*env)->GetFieldID(decodeInfo.env, klass,"image24", "[I");
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				decodeInfo.jia = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+				decodeInfo.jia = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 
-				decodeInfo.jiBody = (*decodeInfo.env)->GetIntArrayElements(decodeInfo.env, decodeInfo.jia, 0);
+				if (decodeInfo.jia == NULL)
+				{
+					release(&decodeInfo);
+					return -1;
+				}
+
+				decodeInfo.jiBody = (*env)->GetIntArrayElements(decodeInfo.env, decodeInfo.jia, 0);
 				if ( catchAndRelease(&decodeInfo) == -1)
 					return -1;
 				ptrIBody = decodeInfo.jiBody;
-
 				for(i = 0; i < width*height; i++)
 				{
-					pix = addR + *red++;
-
-					if(shiftR)
-					{
-						pix = ((pix>>shiftR)+((pix>>(shiftR-1))%2));
-						if(pix > 255) pix = 255; else if(pix < 0) pix = 0;
-					}
-					rc = (unsigned char) pix;
-
-					pix = addG + *green++;
-
-					if(shiftG)
-					{
-						pix = ((pix>>shiftG)+((pix>>(shiftG-1))%2));
-						if(pix > 255) pix = 255; else if(pix < 0) pix = 0;
-					}
-					gc = (unsigned char)pix;
-
-					pix = addB + *blue++;
-
-					if(shiftB)
-					{
-						pix = ((pix>>shiftB)+((pix>>(shiftB-1))%2));
-						if(pix > 255) pix = 255; else if(pix < 0) pix = 0;
-					}
-					bc = (unsigned char)pix;
-
+					rc = (unsigned char) *red++;
+					gc = (unsigned char)*green++;
+					bc = (unsigned char)*blue++;
 					if(hasAlpha)
 					{
-						pix = addA + *alpha++;
-
-						if(shiftA)
-						{
-							pix = ((pix>>shiftA)+((pix>>(shiftA-1))%2));
-							if(pix > 255) pix = 255; else if(pix < 0) pix = 0;
-						}
-						ac = (unsigned char)pix;
+						ac = (unsigned char)*alpha++;;
 					}
 					/*                         A        R          G       B
 					*/
 					*ptrIBody++ = (int)((ac<<24) | (rc<<16) | (gc<<8) | bc);
 
 				}	/* for(i) */
-				/* Replace image24 buffer: 
-				*/
-
 			}/* if (decodeInfo.image->numcomps >= 3  */ 
 			else
 				if(decodeInfo.image->numcomps == 1) /* Grey */
@@ -1286,23 +1229,23 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 						/* Allocate JAVA memory:
 						*/
-						mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "alloc8", "()V");
+						mid = (*env)->GetMethodID(decodeInfo.env, klass, "alloc8", "()V");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						(*decodeInfo.env)->CallVoidMethod(decodeInfo.env, obj, mid);
+						(*env)->CallVoidMethod(decodeInfo.env, obj, mid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"image8", "[B");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"image8", "[B");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jba = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+						decodeInfo.jba = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jbBody = (*decodeInfo.env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jba, 0);
+						decodeInfo.jbBody = (*env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jba, 0);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
@@ -1318,28 +1261,28 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					{
 						jmethodID mid;
 						int *grey;
-						int v, ushift = 0, dshift = 0, force16 = 0;
+						int ushift = 0, dshift = 0, force16 = 0;
 
 						grey = decodeInfo.image->comps[0].data;
 						/* Allocate JAVA memory:
 						*/
-						mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "alloc16", "()V");
+						mid = (*env)->GetMethodID(decodeInfo.env, klass, "alloc16", "()V");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						(*decodeInfo.env)->CallVoidMethod(decodeInfo.env, obj, mid);
+						(*env)->CallVoidMethod(decodeInfo.env, obj, mid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"image16", "[S");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"image16", "[S");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jsa = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+						decodeInfo.jsa = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jsBody = (*decodeInfo.env)->GetShortArrayElements(decodeInfo.env, decodeInfo.jsa, 0);
+						decodeInfo.jsBody = (*env)->GetShortArrayElements(decodeInfo.env, decodeInfo.jsa, 0);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
@@ -1384,23 +1327,23 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 						/* Allocate JAVA memory:
 						*/
-						mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "alloc8", "()V");
+						mid = (*env)->GetMethodID(decodeInfo.env, klass, "alloc8", "()V");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						(*decodeInfo.env)->CallVoidMethod(decodeInfo.env, obj, mid);
+						(*env)->CallVoidMethod(decodeInfo.env, obj, mid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"image8", "[B");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"image8", "[B");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jba = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+						decodeInfo.jba = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jbBody = (*decodeInfo.env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jba, 0);
+						decodeInfo.jbBody = (*env)->GetByteArrayElements(decodeInfo.env, decodeInfo.jba, 0);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
@@ -1416,29 +1359,29 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					{
 						jmethodID mid;
 						int *grey;
-						int v, ushift = 0, dshift = 0, force16 = 0;
+						int ushift = 0, dshift = 0, force16 = 0;
 
 						grey = decodeInfo.image->comps[0].data;
 
 						/* Allocate JAVA memory:
 						*/
-						mid = (*decodeInfo.env)->GetMethodID(decodeInfo.env, klass, "alloc16", "()V");
+						mid = (*env)->GetMethodID(decodeInfo.env, klass, "alloc16", "()V");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						(*decodeInfo.env)->CallVoidMethod(decodeInfo.env, obj, mid);
+						(*env)->CallVoidMethod(decodeInfo.env, obj, mid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						fid = (*decodeInfo.env)->GetFieldID(decodeInfo.env, klass,"image16", "[S");
+						fid = (*env)->GetFieldID(decodeInfo.env, klass,"image16", "[S");
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jsa = (*decodeInfo.env)->GetObjectField(decodeInfo.env, obj, fid);
+						decodeInfo.jsa = (*env)->GetObjectField(decodeInfo.env, obj, fid);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 
-						decodeInfo.jsBody = (*decodeInfo.env)->GetShortArrayElements(decodeInfo.env, decodeInfo.jsa, 0);
+						decodeInfo.jsBody = (*env)->GetShortArrayElements(decodeInfo.env, decodeInfo.jsa, 0);
 						if ( catchAndRelease(&decodeInfo) == -1)
 							return -1;
 

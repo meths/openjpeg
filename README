@@ -2,6 +2,19 @@
 OPENJPEG LIBRARY and APPLICATIONS
 ----------------------------------
 
+BUILDING JAVAIO PLUGIN
+
+- clone ImageIO-Generic project from CodecCentral at github, and put
+at same directory level as openjpeg
+- run cmake on openjpeg, with java and shared libraries enabled
+- build the openjpeg project - this will also build the JNI library
+- in src/wrapping/java, you will find two maven projects: one builds
+the JAVAIO plugin, and one builds a java viewer that can be used to test
+
+
+
+
+
 Details on folders hierarchy:
 
 * src

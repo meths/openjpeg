@@ -169,11 +169,9 @@ static opj_bool jp2_read_boxhdr(opj_common_ptr cinfo, opj_cio_t *cio, opj_jp2_bo
 		box->length = cio_read(cio, 4);
 		if (box->length == 0) 
 			box->length = cio_numbytesleft(cio) + 12;
-	}
-	else if (box->length == 0) {
+	} else if (box->length == 0) {
 		box->length = cio_numbytesleft(cio) + 8;
-	}
-	if (box->length < 0) {
+	} else if (box->length < 0) {
 		opj_event_msg(cinfo, EVT_ERROR, "Integer overflow in box->length\n");
 		return OPJ_FALSE; // TODO: actually check jp2_read_boxhdr's return value
 	}

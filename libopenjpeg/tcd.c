@@ -1393,11 +1393,19 @@ opj_bool tcd_decode_tile(opj_tcd_t *tcd, unsigned char *src, int len, int tileno
         t1_destroy(t1);
         return OPJ_FALSE;
     }
-
+	int comp0size = (tile->comps[0].x1 - tile->comps[0].x0) * (tile->comps[0].y1 - tile->comps[0].y0);
 	for (compno = 0; compno < tile->numcomps; ++compno) {
 		opj_tcd_tilecomp_t* tilec = &tile->comps[compno];
+		int compcsize = ((tilec->x1 - tilec->x0) * (tilec->y1 - tilec->y0));
+		/* Later-on it is assumed that all components are of at least comp0size blocks */
+		if (compcsize < comp0size)
+		{
+			opj_event_msg(tcd->cinfo, EVT_ERROR, "Error decoding tile. Component %d contains only %d blocks "
+				"while component 0 has %d blocks\n", compno, compcsize, comp0size);
+			return OPJ_FALSE;
+		}
 		/* The +3 is headroom required by the vectorized DWT */
-		tilec->data = (int*) opj_aligned_malloc((((tilec->x1 - tilec->x0) * (tilec->y1 - tilec->y0))+3) * sizeof(int));
+		tilec->data = (int*) opj_aligned_malloc((comp0size+3) * sizeof(int));
         if (tilec->data == NULL)
         {
             opj_event_msg(tcd->cinfo, EVT_ERROR, "Out of memory\n");

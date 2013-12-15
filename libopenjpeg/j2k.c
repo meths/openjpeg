@@ -1076,6 +1076,17 @@ static void j2k_read_poc(opj_j2k_t *j2k) {
 	tcp->POC = 1;
 	len = cio_read(cio, 2);		/* Lpoc */
 	numpchgs = (len - 2) / (5 + 2 * (numcomps <= 256 ? 1 : 2));
+
+	{
+		/* old_poc < 0 "just in case" */
+		int maxpocs = (sizeof(tcp->pocs)/sizeof(tcp->pocs[0]));
+		if ((old_poc < 0) || ((numpchgs + old_poc) >= maxpocs)) {
+			opj_event_msg(j2k->cinfo, EVT_ERROR,
+				"JPWL: bad number of progression order changes (%d out of a maximum of %d)\n",
+				(numpchgs + old_poc), maxpocs);
+			return;
+		}
+	}
 	
 	for (i = old_poc; i < numpchgs + old_poc; i++) {
 		opj_poc_t *poc;
@@ -1621,6 +1632,14 @@ static void j2k_read_rgn(opj_j2k_t *j2k) {
       compno, j2k->image->numcomps);
     return;
   }
+
+	/* totlen is negative or larger than the bytes left!!! */
+	if (compno >= numcomps) {
+		opj_event_msg(j2k->cinfo, EVT_ERROR,
+			"JPWL: bad component number in RGN (%d when there are only %d)\n",
+			compno, numcomps);
+		return;
+	}
 
 	tcp->tccps[compno].roishift = cio_read(cio, 1);				/* SPrgn */
 }

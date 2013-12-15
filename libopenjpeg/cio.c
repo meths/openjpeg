@@ -30,6 +30,7 @@
  */
 
 #include "opj_includes.h"
+#include <assert.h>
 
 /* ----------------------------------------------------------------------- */
 
@@ -139,6 +140,11 @@ opj_bool cio_byteout(opj_cio_t *cio, unsigned char v) {
  * Read a byte.
  */
 unsigned char cio_bytein(opj_cio_t *cio) {
+	if (cio->bp < cio->start) {
+		opj_event_msg(cio->cinfo, EVT_ERROR, "read error: trying to read from before the start of the codestream (start = %d, current = %d, end = %d\n", cio->start, cio->bp, cio->end);
+		abort();
+		return 0;
+	}
 	if (cio->bp >= cio->end) {
 		opj_event_msg(cio->cinfo, EVT_ERROR, "read error: passed the end of the codestream (start = %d, current = %d, end = %d\n", cio->start, cio->bp, cio->end);
 		return 0;
@@ -173,7 +179,7 @@ unsigned int cio_read(opj_cio_t *cio, int n) {
 	unsigned int v;
 	v = 0;
 	for (i = n - 1; i >= 0; i--) {
-		v += cio_bytein(cio) << (i << 3);
+		v += (unsigned int)cio_bytein(cio) << (i << 3);
 	}
 	return v;
 }
@@ -184,6 +190,7 @@ unsigned int cio_read(opj_cio_t *cio, int n) {
  * n : number of bytes to skip
  */
 void cio_skip(opj_cio_t *cio, int n) {
+	assert((cio->bp + n) >= cio->bp);
 	cio->bp += n;
 }
 

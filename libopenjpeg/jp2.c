@@ -667,6 +667,17 @@ opj_bool jp2_read_jp2h(opj_jp2_t *jp2, opj_cio_t *cio, opj_jp2_color_t *color)
 
 	if (!jp2_read_ihdr(jp2, cio))
 		return OPJ_FALSE;
+	{
+		int curpos = cio_tell(cio);
+		cio_seek(cio, box.init_pos);
+		cio_skip(cio, box.length);
+		if ((cio_tell(cio) - box.init_pos) != box.length) {
+			opj_event_msg(cinfo, EVT_ERROR, "Box size exceeds size of codestream (expected: %d, real: %d)\n", box.length, (cio_tell(cio) - box.init_pos));
+			return OPJ_FALSE;
+		}
+		cio_seek(cio, curpos);
+	}
+
 	jp2h_end = box.init_pos + box.length;
 
   if (jp2->bpc == 255) 
@@ -865,6 +876,13 @@ static opj_bool jp2_read_ftyp(opj_jp2_t *jp2, opj_cio_t *cio) {
 	jp2->minversion = cio_read(cio, 4);	/* MinV */
 	jp2->numcl = (box.length - 16) / 4;
 	jp2->cl = (unsigned int *) opj_malloc(jp2->numcl * sizeof(unsigned int));
+
+	if (cio_numbytesleft(cio) < ((int)jp2->numcl * 4)) {
+		opj_event_msg(cinfo, EVT_ERROR, "Not enough bytes in FTYP Box "
+				"(expected %d, but only %d left)\n",
+				((int)jp2->numcl * 4), cio_numbytesleft(cio));
+		return OPJ_FALSE;
+	}
 
 	for (i = 0; i < (int)jp2->numcl; i++) {
 		jp2->cl[i] = cio_read(cio, 4);	/* CLi */

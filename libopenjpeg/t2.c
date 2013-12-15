@@ -340,6 +340,11 @@ static int t2_decode_packet(opj_t2_t* t2, unsigned char *src, int len, opj_tcd_t
 	int precno = pi->precno;	/* precinct value */
 	int layno  = pi->layno;		/* quality layer value */
 
+	if (!&(tile->comps[compno])) {
+		opj_event_msg(t2->cinfo, EVT_ERROR, "Trying to decode tile with no components!\n");
+		return -999;
+	}
+
 	opj_tcd_resolution_t* res = &tile->comps[compno].resolutions[resno];
 
 	unsigned char *hd = NULL;

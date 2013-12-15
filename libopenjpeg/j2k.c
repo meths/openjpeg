@@ -476,7 +476,7 @@ static void j2k_read_siz(opj_j2k_t *j2k) {
 
 	image->comps = (opj_image_comp_t*) opj_calloc(image->numcomps, sizeof(opj_image_comp_t));
 	for (i = 0; i < image->numcomps; i++) {
-		int tmp, w, h;
+		int tmp/*, w, h*/;
 		tmp = cio_read(cio, 1);		/* Ssiz_i */
 		image->comps[i].prec = (tmp & 0x7f) + 1;
 		image->comps[i].sgnd = tmp >> 7;
@@ -511,6 +511,14 @@ static void j2k_read_siz(opj_j2k_t *j2k) {
 			
 		}
 #endif /* USE_JPWL */
+		{
+			if (!(image->comps[i].dx * image->comps[i].dy)) {
+				opj_event_msg(j2k->cinfo, EVT_ERROR,
+					"JPWL: bad XRsiz_%d/YRsiz_%d (%d x %d)\n",
+					i, i, image->comps[i].dx, image->comps[i].dy);
+					return;
+			}
+		}
 
     /* prevent division by zero */
     if (!(image->comps[i].dx * image->comps[i].dy)) {
@@ -519,8 +527,8 @@ static void j2k_read_siz(opj_j2k_t *j2k) {
     }
 
 		/* TODO: unused ? */
-		w = int_ceildiv(image->x1 - image->x0, image->comps[i].dx);
-		h = int_ceildiv(image->y1 - image->y0, image->comps[i].dy);
+/*		w = int_ceildiv(image->x1 - image->x0, image->comps[i].dx);
+		h = int_ceildiv(image->y1 - image->y0, image->comps[i].dy);*/
 
 		image->comps[i].resno_decoded = 0;	/* number of resolution decoded */
 		image->comps[i].factor = cp->reduce; /* reducing factor per component */
@@ -2015,6 +2023,11 @@ opj_image_t* j2k_decode(opj_j2k_t *j2k, opj_cio_t *cio, opj_codestream_info_t *c
 	}
 	if (j2k->state == J2K_STATE_NEOC) {
 		j2k_read_eoc(j2k);
+		/* Check one last time for errors during decoding before returning */
+		if (j2k->state & J2K_STATE_ERR) {
+			opj_image_destroy(image);
+			return NULL;
+		}
 	}
 
 	if (j2k->state != J2K_STATE_MT) {

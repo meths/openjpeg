@@ -667,8 +667,8 @@ void tcd_malloc_decode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp) {
 			y1 = j == 0 ? tilec->y1 : int_max(y1,	(unsigned int) tilec->y1);
 		}
 
-		w = int_ceildivpow2(x1 - x0, image->comps[i].factor);
-		h = int_ceildivpow2(y1 - y0, image->comps[i].factor);
+		w = int_ceildivpow2((long)(x1) - (long)(x0), image->comps[i].factor);
+		h = int_ceildivpow2((long)(y1) - (long)(y0), image->comps[i].factor);
 
 		image->comps[i].w = w;
 		image->comps[i].h = h;
@@ -1381,7 +1381,15 @@ opj_bool tcd_decode_tile(opj_tcd_t *tcd, unsigned char *src, int len, int tileno
 	if (l == -999) {
 		eof = 1;
 		opj_event_msg(tcd->cinfo, EVT_ERROR, "tcd_decode: incomplete bistream\n");
+		return OPJ_FALSE;
 	}
+
+	/* The code below assumes that numcomps > 0 */
+	if (tile->numcomps <= 0) {
+		opj_event_msg(tcd->cinfo, EVT_ERROR, "tcd_decode: tile has a zero or negative numcomps\n");
+		return OPJ_TRUE;
+	}
+
 	
 	/*------------------TIER1-----------------*/
 	

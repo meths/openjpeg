@@ -107,6 +107,11 @@ int OPJ_CALLCONV cio_tell(opj_cio_t *cio) {
  * pos : position, in number of bytes, from the beginning of the stream
  */
 void OPJ_CALLCONV cio_seek(opj_cio_t *cio, int pos) {
+	if ((cio->start + pos) > cio->end) {
+		opj_event_msg(cio->cinfo, EVT_ERROR, "error: trying to seek past the end of the codestream (start = %d, change = %d, end = %d\n", cio->start, pos, cio->end);
+		cio->bp = cio->end;
+		return;
+	}
 	cio->bp = cio->start + pos;
 }
 
@@ -114,6 +119,7 @@ void OPJ_CALLCONV cio_seek(opj_cio_t *cio, int pos) {
  * Number of bytes left before the end of the stream.
  */
 int cio_numbytesleft(opj_cio_t *cio) {
+	assert((cio->end - cio->bp) >= 0);
 	return cio->end - cio->bp;
 }
 
@@ -191,6 +197,11 @@ unsigned int cio_read(opj_cio_t *cio, int n) {
  */
 void cio_skip(opj_cio_t *cio, int n) {
 	assert((cio->bp + n) >= cio->bp);
+	if (((cio->bp + n) < cio->start) || ((cio->bp + n) > cio->end)) {
+		opj_event_msg(cio->cinfo, EVT_ERROR, "error: trying to skip bytes past the end of the codestream (current = %d, change = %d, end = %d\n", cio->bp, n, cio->end);
+		cio->bp = cio->end;
+		return;
+	}
 	cio->bp += n;
 }
 

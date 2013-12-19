@@ -527,25 +527,24 @@ static void jp2_apply_cdef(opj_image_t *image, opj_jp2_color_t *color)
 	info = color->jp2_cdef->info;
 	n = color->jp2_cdef->n;
 
-	for(i = 0; i < n; ++i)
-   {
-/* WATCH: acn = asoc - 1 ! */
-	if((asoc = info[i].asoc) == 0) continue;
+	for(i = 0; i < n; ++i) {
+		/* WATCH: acn = asoc - 1 ! */
+		asoc = info[i].asoc;
+		if(asoc == 0 || asoc == 65535) continue;
 
-	cn = info[i].cn; typ = info[i].typ; acn = asoc - 1;
+		cn = info[i].cn; typ = info[i].typ; acn = asoc - 1;
 
-	if(cn != acn)
-  {
-	opj_image_comp_t saved;
+		if(cn != acn) {
+			opj_image_comp_t saved;
 
-	memcpy(&saved, &image->comps[cn], sizeof(opj_image_comp_t));
-	memcpy(&image->comps[cn], &image->comps[acn], sizeof(opj_image_comp_t));
-	memcpy(&image->comps[acn], &saved, sizeof(opj_image_comp_t));
+			memcpy(&saved, &image->comps[cn], sizeof(opj_image_comp_t));
+			memcpy(&image->comps[cn], &image->comps[acn], sizeof(opj_image_comp_t));
+			memcpy(&image->comps[acn], &saved, sizeof(opj_image_comp_t));
 
-	info[i].asoc = cn + 1;
-	info[acn].asoc = info[acn].cn + 1;
-  }
-   }
+			info[i].asoc = cn + 1;
+			info[acn].asoc = info[acn].cn + 1;
+		}
+	}
 	if(color->jp2_cdef->info) opj_free(color->jp2_cdef->info);
 
 	opj_free(color->jp2_cdef); color->jp2_cdef = NULL;

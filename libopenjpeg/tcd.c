@@ -1417,6 +1417,7 @@ opj_bool tcd_decode_tile(opj_tcd_t *tcd, unsigned char *src, int len, int tileno
         if (tilec->data == NULL)
         {
             opj_event_msg(tcd->cinfo, EVT_ERROR, "Out of memory\n");
+            t1_destroy(t1);
             return OPJ_FALSE;
         }
 

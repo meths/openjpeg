@@ -1169,7 +1169,9 @@ int mj2_read_smj2(opj_image_t * img, mj2_tk_t * tk, opj_cio_t *cio)
     return 1;
  }
 
-  tk->jp2_struct.comps = (opj_jp2_comps_t*) opj_malloc(tk->jp2_struct.numcomps * sizeof(opj_jp2_comps_t));
+  /* tk->jp2_struct.comps has been allocated in jp2_read_ihdr() called from
+   * jp2_read_jp2h() above. */
+
   tk->jp2_struct.cl = (unsigned int*) opj_malloc(sizeof(unsigned int));
 
   tk->num_br = 0;

@@ -277,23 +277,20 @@ void output_log( bool messages, bool metadata, bool ihdrbox, jpip_dec_param_t *d
  *  test the format of index (cidx) box in JP2 file
  */
 
-/** Redefinition of index parameters*/
-typedef index_param_t index_t;
-
 /**
  * Parse JP2 file and get index information from cidx box inside
  * 
  * @param[in] fd file descriptor of the JP2 file
  * @return       pointer to the generated structure of index parameters
  */
-index_t * get_index_from_JP2file( int fd);
+index_param_t * get_index_from_JP2file( int fd);
 
 /**
  * Destroy index parameters
  *
  * @param[in,out] idx addressof the index pointer
  */
-void destroy_index( index_t **idx);
+void destroy_index( index_param_t **idx);
 
 
 /**
@@ -301,7 +298,7 @@ void destroy_index( index_t **idx);
  *
  * @param[in] index index parameters
  */
-void output_index( index_t *index);
+void output_index( index_param_t *index);
 
 #endif /*SERVER*/
 

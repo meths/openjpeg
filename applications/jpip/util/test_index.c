@@ -52,7 +52,7 @@ int
 main(int argc, char *argv[])
 {
   int fd;
-  index_t *jp2idx;
+  index_param_t *jp2idx;
   if( argc < 2 ) return 1;
   
   if( (fd = open( argv[1], O_RDONLY)) == -1){

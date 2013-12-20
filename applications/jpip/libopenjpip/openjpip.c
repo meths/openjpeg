@@ -409,7 +409,7 @@ void destroy_jpipdecoder( jpip_dec_param_t **dec)
   free( *dec);
 }
 
-index_t * get_index_from_JP2file( int fd)
+index_param_t * get_index_from_JP2file( int fd)
 {
   char *data;
  
@@ -437,12 +437,12 @@ index_t * get_index_from_JP2file( int fd)
   return parse_jp2file( fd);
 }
 
-void destroy_index( index_t **idx)
+void destroy_index( index_param_t **idx)
 {
   delete_index( idx);
 }
 
-void output_index( index_t *index)
+void output_index( index_param_t *index)
 {
   print_index( *index);
 }

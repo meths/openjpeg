@@ -199,6 +199,7 @@ typedef struct opj_event_mgr {
 /**
 Progression order changes
 */
+#define PROGORDER_LEN 5
 typedef struct opj_poc {
 	/** Resolution num start, Component num start, given by POC */
 	int resno0, compno0;
@@ -209,7 +210,7 @@ typedef struct opj_poc {
 	/** Progression order enum*/
 	OPJ_PROG_ORDER prg1,prg;
 	/** Progression order string*/
-	char progorder[5];
+	char progorder[PROGORDER_LEN];
 	/** Tile number */
 	int tile;
 	/** Start and end values for Tile width and height*/
@@ -428,7 +429,13 @@ typedef struct opj_dparameters {
  * opj_common_struct_t, only of opj_cinfo_t and opj_dinfo_t.
  */
 typedef struct opj_common_struct {
-  opj_common_fields;		/* Fields common to both master struct types */
+	opj_event_mgr_t *event_mgr;	/**< pointer to the event manager */\
+	void * client_data;		/**< Available for use by application */\
+	opj_bool is_decompressor;	/**< So common code can tell which is which */\
+	OPJ_CODEC_FORMAT codec_format;	/**< selected codec */\
+	void *j2k_handle;		/**< pointer to the J2K codec */\
+	void *jp2_handle;		/**< pointer to the JP2 codec */\
+	void *mj2_handle;		/* Fields common to both master struct types */
   /* Additional fields follow in an actual opj_cinfo_t or
    * opj_dinfo_t.  All three structs must agree on these
    * initial fields!  (This would be a lot cleaner in C++.)
@@ -436,13 +443,21 @@ typedef struct opj_common_struct {
 } opj_common_struct_t;
 
 typedef opj_common_struct_t * opj_common_ptr;
-
+//typedef opj_common_struct_t opj_cinfo_t;
+//typedef opj_common_struct_t opj_dinfo_t;
 /**
 Compression context info
 */
 typedef struct opj_cinfo {
 	/** Fields shared with opj_dinfo_t */
-	opj_common_fields;	
+	opj_event_mgr_t *event_mgr;	/**< pointer to the event manager */\
+	void * client_data;			/**< Available for use by application */\
+	opj_bool is_decompressor;		/**< So common code can tell which is which */\
+	/*OPJ_CODEC_FORMAT codec_format;	*//**< selected codec */\
+	int codec_format;	/**< selected codec */\
+	void *j2k_handle;			/**< pointer to the J2K codec */\
+	void *jp2_handle;			/**< pointer to the JP2 codec */\
+	void *mj2_handle;
 	/* other specific fields go here */
 } opj_cinfo_t;
 
@@ -451,7 +466,13 @@ Decompression context info
 */
 typedef struct opj_dinfo {
 	/** Fields shared with opj_cinfo_t */
-	opj_common_fields;	
+	opj_event_mgr_t *event_mgr;	/**< pointer to the event manager */\
+	void * client_data;			/**< Available for use by application */\
+	opj_bool is_decompressor;		/**< So common code can tell which is which */\
+	OPJ_CODEC_FORMAT codec_format;	/**< selected codec */\
+	void *j2k_handle;			/**< pointer to the J2K codec */\
+	void *jp2_handle;			/**< pointer to the JP2 codec */\
+	void *mj2_handle;
 	/* other specific fields go here */
 } opj_dinfo_t;
 
@@ -591,7 +612,7 @@ typedef struct opj_packet_info {
 	int end_ph_pos;
 	/** packet end position */
 	int end_pos;
-	/** packet distorsion */
+	/** packet distortion */
 	double disto;
 } opj_packet_info_t;
 

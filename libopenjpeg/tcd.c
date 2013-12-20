@@ -32,6 +32,7 @@
 
 #define _ISOC99_SOURCE /* lrintf is C99 */
 #include "opj_includes.h"
+#include <assert.h>
 
 void tcd_dump(FILE *fd, opj_tcd_t *tcd, opj_tcd_image_t * img) {
 	int tileno, compno, resno, bandno, precno;/*, cblkno;*/
@@ -99,14 +100,21 @@ Create a new TCD handle
 */
 opj_tcd_t* tcd_create(opj_common_ptr cinfo) {
 	/* create the tcd structure */
-	opj_tcd_t *tcd = (opj_tcd_t*)opj_malloc(sizeof(opj_tcd_t));
-	if(!tcd) return NULL;
+	opj_tcd_t *tcd = (opj_tcd_t*)opj_malloc(sizeof *tcd);
+
+	if(tcd == NULL) return NULL;
+
 	tcd->cinfo = cinfo;
-	tcd->tcd_image = (opj_tcd_image_t*)opj_malloc(sizeof(opj_tcd_image_t));
+
+	/*
+	bytes = sizeof(opj_tcd_image_t);
+	tcd->tcd_image = (opj_tcd_image_t*)opj_malloc(bytes);
 	if(!tcd->tcd_image) {
 		opj_free(tcd);
 		return NULL;
 	}
+*/
+	tcd->tcd_image = &tcd->tcd_image_data;
 
 	return tcd;
 }
@@ -115,16 +123,30 @@ opj_tcd_t* tcd_create(opj_common_ptr cinfo) {
 Destroy a previously created TCD handle
 */
 void tcd_destroy(opj_tcd_t *tcd) {
+	/*
 	if(tcd) {
 		opj_free(tcd->tcd_image);
 		opj_free(tcd);
 	}
+	*/
+	/* Changed free algorithm as we now no
+	 * longer have to free tcd_image member
+	 * explicitly by default.
+	 */
+	if (tcd != NULL && (tcd->tcd_image != &tcd->tcd_image_data))
+	{
+		opj_free(tcd->tcd_image);
+	}
+
+	opj_free(tcd);
 }
 
 /* ----------------------------------------------------------------------- */
 
 void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int curtileno) {
 	int tileno, compno, resno, bandno, precno, cblkno;
+	size_t bytes;
+	size_t bytes_total = 0;
 
 	tcd->image = image;
 	tcd->cp = cp;
@@ -182,8 +204,9 @@ void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int c
 			}
 		}
 		/* << Modification of the RATE */
-		
-		tile->comps = (opj_tcd_tilecomp_t *) opj_malloc(image->numcomps * sizeof(opj_tcd_tilecomp_t));
+		bytes = image->numcomps * sizeof(opj_tcd_tilecomp_t);
+		bytes_total += bytes;
+		tile->comps = (opj_tcd_tilecomp_t *) opj_malloc(bytes);
 		for (compno = 0; compno < tile->numcomps; compno++) {
 			opj_tccp_t *tccp = &tcp->tccps[compno];
 
@@ -195,10 +218,14 @@ void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int c
 			tilec->x1 = int_ceildiv(tile->x1, image->comps[compno].dx);
 			tilec->y1 = int_ceildiv(tile->y1, image->comps[compno].dy);
 			
-			tilec->data = (int *) opj_aligned_malloc((tilec->x1 - tilec->x0) * (tilec->y1 - tilec->y0) * sizeof(int));
+			bytes = (tilec->x1 - tilec->x0) * (tilec->y1 - tilec->y0) * sizeof(int);
+			bytes_total += bytes;
+			tilec->data = (int *) opj_aligned_malloc(bytes);
 			tilec->numresolutions = tccp->numresolutions;
 
-			tilec->resolutions = (opj_tcd_resolution_t *) opj_malloc(tilec->numresolutions * sizeof(opj_tcd_resolution_t));
+			bytes = tilec->numresolutions * sizeof(opj_tcd_resolution_t);
+			bytes_total += bytes;
+			tilec->resolutions = (opj_tcd_resolution_t *) opj_malloc(bytes);
 			
 			for (resno = 0; resno < tilec->numresolutions; resno++) {
 				int pdx, pdy;
@@ -286,7 +313,9 @@ void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int c
 					band->stepsize = (float)((1.0 + ss->mant / 2048.0) * pow(2.0, numbps - ss->expn));
 					band->numbps = ss->expn + tccp->numgbits - 1;	/* WHY -1 ? */
 					
-					band->precincts = (opj_tcd_precinct_t *) opj_malloc(3 * res->pw * res->ph * sizeof(opj_tcd_precinct_t));
+					bytes = 3 * res->pw * res->ph * sizeof(opj_tcd_precinct_t);
+					bytes_total += bytes;
+					band->precincts = (opj_tcd_precinct_t *) opj_malloc(bytes);
 					
 					for (i = 0; i < res->pw * res->ph * 3; i++) {
 						band->precincts[i].imsbtree = NULL;
@@ -294,7 +323,9 @@ void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int c
 						band->precincts[i].cblks.enc = NULL;
 					}
 					
-					for (precno = 0; precno < res->pw * res->ph; precno++) {
+
+					int precno_max = res->pw * res->ph;
+					for (precno = 0; precno < precno_max; precno++) {
 						int tlcblkxstart, tlcblkystart, brcblkxend, brcblkyend;
 
 						int cbgxstart = tlcbgxstart + (precno % res->pw) * (1 << cbgwidthexpn);
@@ -317,11 +348,14 @@ void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int c
 						prc->cw = (brcblkxend - tlcblkxstart) >> cblkwidthexpn;
 						prc->ch = (brcblkyend - tlcblkystart) >> cblkheightexpn;
 
+						bytes = (prc->cw * prc->ch) * sizeof(opj_tcd_cblk_enc_t);
+						bytes_total += bytes;
 						prc->cblks.enc = (opj_tcd_cblk_enc_t*) opj_calloc((prc->cw * prc->ch), sizeof(opj_tcd_cblk_enc_t));
 						prc->incltree = tgt_create(prc->cw, prc->ch);
 						prc->imsbtree = tgt_create(prc->cw, prc->ch);
 						
-						for (cblkno = 0; cblkno < prc->cw * prc->ch; cblkno++) {
+						int cblk_max = prc->cw * prc->ch;
+						for (cblkno = 0; cblkno < cblk_max; cblkno++) {
 							int cblkxstart = tlcblkxstart + (cblkno % prc->cw) * (1 << cblkwidthexpn);
 							int cblkystart = tlcblkystart + (cblkno / prc->cw) * (1 << cblkheightexpn);
 							int cblkxend = cblkxstart + (1 << cblkwidthexpn);
@@ -334,13 +368,26 @@ void tcd_malloc_encode(opj_tcd_t *tcd, opj_image_t * image, opj_cp_t * cp, int c
 							cblk->y0 = int_max(cblkystart, prc->y0);
 							cblk->x1 = int_min(cblkxend, prc->x1);
 							cblk->y1 = int_min(cblkyend, prc->y1);
+
+							bytes = (9728+2) * sizeof(unsigned char);
+							bytes_total += bytes;
 							cblk->data = (unsigned char*) opj_calloc(9728+2, sizeof(unsigned char));
 							/* FIXME: mqc_init_enc and mqc_byteout underrun the buffer if we don't do this. Why? */
 							cblk->data[0] = 0;
 							cblk->data[1] = 0;
 							cblk->data += 2;
+
+							bytes = 100 * sizeof(opj_tcd_layer_t);
+							bytes_total += bytes;
 							cblk->layers = (opj_tcd_layer_t*) opj_calloc(100, sizeof(opj_tcd_layer_t));
+
+							bytes = 100 * sizeof(opj_tcd_pass_t);
+							bytes_total += bytes;
+
 							cblk->passes = (opj_tcd_pass_t*) opj_calloc(100, sizeof(opj_tcd_pass_t));
+
+							assert(bytes_total <= (1 << 29));
+
 						}
 					}
 				}

@@ -26,12 +26,18 @@
  */
 #ifndef __OPJ_MALLOC_H
 #define __OPJ_MALLOC_H
+
+#include <stdlib.h>
+
 /**
 @file opj_malloc.h
 @brief Internal functions
 
 The functions in opj_malloc.h are internal utilities used for memory management.
 */
+
+#define OPJ_MM_MALLOC_BYTE_ALIGN 16
+
 
 /** @defgroup MISC MISC - Miscellaneous internal functions */
 /*@{*/
@@ -48,7 +54,8 @@ Allocate an uninitialized memory block
 #ifdef ALLOC_PERF_OPT
 void * OPJ_CALLCONV opj_malloc(size_t size);
 #else
-#define opj_malloc(size) malloc(size)
+//#define opj_malloc(size) malloc(size)
+void * opj_malloc(size_t size) __attribute__((malloc));
 #endif
 
 /**
@@ -60,11 +67,12 @@ Allocate a memory block with elements initialized to 0
 #ifdef ALLOC_PERF_OPT
 void * OPJ_CALLCONV opj_calloc(size_t _NumOfElements, size_t _SizeOfElements);
 #else
-#define opj_calloc(num, size) calloc(num, size)
+//#define opj_calloc(num, size) calloc(num, size)
+void * opj_calloc(size_t num, size_t size);
 #endif
 
 /**
-Allocate memory aligned to a 16 byte boundry
+Allocate memory aligned to a 16 byte boundary
 @param size Bytes to allocate
 @return Returns a void pointer to the allocated space, or NULL if there is insufficient memory available
 */
@@ -88,40 +96,18 @@ Allocate memory aligned to a 16 byte boundry
 	/* Linux x86_64 and OSX always align allocations to 16 bytes */
 	#elif !defined(__amd64__) && !defined(__APPLE__) && !defined(_AIX)
 		#define HAVE_MEMALIGN
-		#include <malloc.h>			
+		#include <malloc.h>
 	#endif
 #endif
 
-#define opj_aligned_malloc(size) malloc(size)
-#define opj_aligned_free(m) free(m)
-
-#ifdef HAVE_MM_MALLOC
-	#undef opj_aligned_malloc
-	#define opj_aligned_malloc(size) _mm_malloc(size, 16)
-	#undef opj_aligned_free
-	#define opj_aligned_free(m) _mm_free(m)
-#endif
 
 #ifdef HAVE_MEMALIGN
-	extern void* memalign(size_t, size_t);
-	#undef opj_aligned_malloc
-	#define opj_aligned_malloc(size) memalign(16, (size))
-	#undef opj_aligned_free
-	#define opj_aligned_free(m) free(m)
-#endif
+extern void* memalign(size_t, size_t);
+#endif /* HAVE_MEMALIGN */
 
 #ifdef HAVE_POSIX_MEMALIGN
-	#undef opj_aligned_malloc
-	extern int posix_memalign(void**, size_t, size_t);
-
-	static INLINE void* __attribute__ ((malloc)) opj_aligned_malloc(size_t size){
-		void* mem = NULL;
-		posix_memalign(&mem, 16, size);
-		return mem;
-	}
-	#undef opj_aligned_free
-	#define opj_aligned_free(m) free(m)
-#endif
+extern int posix_memalign(void**, size_t, size_t);
+#endif /* HAVE_POSIX_MEMALIGN */
 
 #ifdef ALLOC_PERF_OPT
 	#undef opj_aligned_malloc
@@ -139,7 +125,8 @@ Reallocate memory blocks.
 #ifdef ALLOC_PERF_OPT
 void * OPJ_CALLCONV opj_realloc(void * m, size_t s);
 #else
-#define opj_realloc(m, s) realloc(m, s)
+//#define opj_realloc(m, s) realloc(m, s)
+void* opj_realloc (void * ptr, size_t size);
 #endif
 
 /**
@@ -149,12 +136,16 @@ Deallocates or frees a memory block.
 #ifdef ALLOC_PERF_OPT
 void OPJ_CALLCONV opj_free(void * m);
 #else
-#define opj_free(m) free(m)
+//#define opj_free(m) free(m)
+void opj_free (void* ptr);
 #endif
 
-#ifdef __GNUC__
-#pragma GCC poison malloc calloc realloc free
-#endif
+void* opj_aligned_malloc(size_t size) __attribute__ ((malloc));
+void opj_aligned_free(void *ptr);
+
+//#ifdef __GNUC__
+//#pragma GCC poison malloc calloc realloc free
+//#endif
 
 /* ----------------------------------------------------------------------- */
 /*@}*/

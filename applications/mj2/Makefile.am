@@ -13,6 +13,7 @@ OPJ_SRC = \
 ../../libopenjpeg/mct.c \
 ../../libopenjpeg/mqc.c \
 ../../libopenjpeg/openjpeg.c \
+../../libopenjpeg/opj_malloc.c \
 ../../libopenjpeg/pi.c \
 ../../libopenjpeg/raw.c \
 ../../libopenjpeg/t1.c \

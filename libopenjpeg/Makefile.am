@@ -32,6 +32,7 @@ jpt.c \
 mct.c \
 mqc.c \
 openjpeg.c \
+opj_malloc.c \
 pi.c \
 raw.c \
 t1.c \

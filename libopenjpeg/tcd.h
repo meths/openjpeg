@@ -198,6 +198,11 @@ typedef struct opj_tcd {
 	int tcd_tileno;
 	/** Time taken to encode a tile*/
 	double encoding_time;
+
+	/* Add a statically allocated opj_tcd_image_t struct here.
+	 * Eliminates a malloc call for data of size 12 bytes.
+	 */
+	opj_tcd_image_t tcd_image_data;
 } opj_tcd_t;
 
 /** @name Exported functions */

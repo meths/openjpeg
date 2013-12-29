@@ -38,7 +38,7 @@
 #include <string.h>
 #include "opj_includes.h"
 
-/* 
+/*
  * Write tile-part headers mhix box
  *
  * @param[in] coff      offset of j2k codestream
@@ -66,12 +66,12 @@ int write_thix( int coff, opj_codestream_info_t cstr_info, opj_cio_t *cio)
     cio_skip( cio, 4);              /* L [at the end] */
     cio_write( cio, JPIP_THIX, 4);  /* THIX           */
     write_manf( i, cstr_info.tw*cstr_info.th, box, cio);
-    
+
     for (tileno = 0; tileno < cstr_info.tw*cstr_info.th; tileno++){
       box[tileno].length = write_tilemhix( coff, cstr_info, tileno, cio);
       box[tileno].type = JPIP_MHIX;
     }
- 
+
     len = cio_tell( cio)-lenp;
     cio_seek( cio, lenp);
     cio_write( cio, len, 4);        /* L              */
@@ -98,7 +98,7 @@ int write_tilemhix( int coff, opj_codestream_info_t cstr_info, int tileno, opj_c
   tile = cstr_info.tile[tileno];
   tp = tile.tp[0];
 
-  cio_write( cio, tp.tp_end_header-tp.tp_start_pos+1, 8);  /* TLEN                              */ 
+  cio_write( cio, tp.tp_end_header-tp.tp_start_pos+1, 8);  /* TLEN                              */
 
   marker = cstr_info.tile[tileno].marker;
 
@@ -108,7 +108,7 @@ int write_tilemhix( int coff, opj_codestream_info_t cstr_info, int tileno, opj_c
     cio_write( cio, marker[i].pos-coff, 8);
     cio_write( cio, marker[i].len, 2);
   }
-     
+
   /*  free( marker);*/
 
   len = cio_tell( cio) - lenp;

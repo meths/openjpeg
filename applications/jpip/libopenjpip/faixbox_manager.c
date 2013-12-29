@@ -115,8 +115,8 @@ void print_faixbox( faixbox_param_t *faix)
   fprintf( logstream, "faix box info\n");
   fprintf( logstream, "\tversion: %d\n", faix->version);
   
-  fprintf( logstream, "\t nmax: %#llx = %lld\n", get_nmax( faix), get_nmax( faix));
-  fprintf( logstream, "\t m: %#llx = %lld\n", get_m( faix), get_m( faix));
+  fprintf( logstream, "\t nmax: %#llx = %llu\n", get_nmax( faix), get_nmax( faix));
+  fprintf( logstream, "\t m: %#llx = %llu\n", get_m( faix), get_m( faix));
 
   for( i=0; i<get_m( faix); i++){
     for( j=0; j<get_nmax( faix); j++){

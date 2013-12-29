@@ -1868,6 +1868,7 @@ int imagetopgx(opj_image_t * image, const char *outfile) {
 		fdest = fopen(name, "wb");
 		if (!fdest) {
 			fprintf(stderr, "ERROR -> failed to open %s for writing\n", name);
+			free(name);
 			return 1;
 		}
 
@@ -3509,7 +3510,7 @@ opj_image_t *pngtoimage(const char *read_idf, opj_cparameters_t * params)
 	int unit;
 	png_uint_32 resx, resy;
 	unsigned int i, j;
-	png_uint_32  width, height;
+	png_uint_32  width, height=0;
 	int color_type, has_alpha, is16;
 	unsigned char *s;
 	FILE *reader;

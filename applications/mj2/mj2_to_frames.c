@@ -73,8 +73,8 @@ void info_callback(const char *msg, void *client_data) {
 
 int main(int argc, char *argv[]) {
 	mj2_dparameters_t mj2_parameters;			/* decompression parameters */
-	opj_dinfo_t* dinfo; 
-	opj_event_mgr_t event_mgr;		/* event manager */	
+	opj_dinfo_t* dinfo;
+	opj_event_mgr_t event_mgr;		/* event manager */
 	opj_cio_t *cio = NULL;
   unsigned int tnum, snum, failed;
   opj_mj2_t *movie;
@@ -86,14 +86,14 @@ int main(int argc, char *argv[]) {
 	unsigned int max_codstrm_size = 0;
 	double total_time = 0;
 	unsigned int numframes = 0;
-			
+
   if (argc != 3) {
-    printf("\nUsage: %s inputfile.mj2 outputfile.yuv\n\n",argv[0]); 
+    printf("\nUsage: %s inputfile.mj2 outputfile.yuv\n\n",argv[0]);
     return 1;
   }
-  
+
   infile = fopen(argv[1], "rb");
-  
+
   if (!infile) {
     fprintf(stderr, "failed to open %s for reading\n", argv[1]);
     return 1;
@@ -138,38 +138,38 @@ int main(int argc, char *argv[]) {
 	event_mgr.error_handler = error_callback;
 	event_mgr.warning_handler = warning_callback;
 	event_mgr.info_handler = NULL;
-	
+
 	/* get a MJ2 decompressor handle */
 	dinfo = mj2_create_decompress();
 	if(dinfo == NULL) goto fin;
 
 	movie = (opj_mj2_t*)dinfo->mj2_handle;
-	
+
 	/* catch events using our callbacks and give a local context */
-	opj_set_event_mgr((opj_common_ptr)dinfo, &event_mgr, stderr);		
+	opj_set_event_mgr((opj_common_ptr)dinfo, &event_mgr, stderr);
 
 	memset(&mj2_parameters, 0, sizeof(mj2_dparameters_t));
 	/* set J2K decoding parameters to default values */
 	opj_set_default_decoder_parameters(&mj2_parameters.j2k_parameters);
-	
+
 	/* setup the decoder decoding parameters using user parameters */
 	mj2_setup_decoder(movie, &mj2_parameters);
 
-/* Create the movie structure: */			
+/* Create the movie structure: */
   if (mj2_read_struct(infile, movie))
     goto fin;
-	
+
 /* Decode first video track */
 	for (tnum=0; tnum < (unsigned int)(movie->num_htk + movie->num_stk + movie->num_vtk); tnum++) {
-		if (movie->tk[tnum].track_type == 0) 
+		if (movie->tk[tnum].track_type == 0)
 			break;
 	}
-	
+
 	if (movie->tk[tnum].track_type != 0) {
 		printf("Error. Movie does not contain any video track\n");
 		goto fin;
 	}
-	
+
   track = &movie->tk[tnum];
 
 	if(track->jp2_struct.enumcs != ENUMCS_SYCC)
@@ -181,16 +181,16 @@ int main(int argc, char *argv[]) {
 	goto fin;
    }
 /* Output info on first video track: */
-  fprintf(stdout,"The first video track contains %d frames.\nWidth: %d, Height: %d \n\n",
+  fprintf(stdout,"The first video track contains %u frames.\nWidth: %d, Height: %d \n\n",
     track->num_samples, track->w, track->h);
-	
+
 	max_codstrm_size = track->sample[0].sample_size-8;
-	frame_codestream = (unsigned char*) 
-	 malloc(max_codstrm_size * sizeof(unsigned char)); 
+	frame_codestream = (unsigned char*)
+	 malloc(max_codstrm_size * sizeof(unsigned char));
 	if(frame_codestream == NULL) goto fin;
 
 	numframes = track->num_samples;
-	
+
   for (snum=0; snum < numframes; snum++)
   {
 	double init_time = opj_clock();
@@ -199,16 +199,17 @@ int main(int argc, char *argv[]) {
     sample = &track->sample[snum];
 		if (sample->sample_size-8 > max_codstrm_size) {
 			max_codstrm_size =  sample->sample_size-8;
-			if ((frame_codestream = (unsigned char*)
-				realloc(frame_codestream, max_codstrm_size)) == NULL) {
+			unsigned char* new_frame_codestream = (unsigned char*)realloc(frame_codestream, max_codstrm_size);
+			if (new_frame_codestream == NULL) {
 				printf("Error reallocation memory\n");
 				goto fin;
-			}; 		
+			};
+			frame_codestream = new_frame_codestream;
 		}
     fseek(infile,sample->offset+8,SEEK_SET);
 /* Assuming that jp and ftyp markers size do: */
     fread(frame_codestream, sample->sample_size-8, 1, infile);
-		
+
 		/* open a byte stream */
 	cio = opj_cio_open((opj_common_ptr)dinfo, frame_codestream, sample->sample_size-8);
 
@@ -222,34 +223,34 @@ int main(int argc, char *argv[]) {
 	if (!imagetoyuv(img, argv[2]))
 				goto fin;
 
-	opj_cio_close(cio);	
+	opj_cio_close(cio);
 
 	opj_image_destroy(img);
 
 	elapsed_time = opj_clock()-init_time;
-	fprintf(stderr, "Frame number %d/%d decoded in %.2f mseconds\n", 
+	fprintf(stderr, "Frame number %d/%u decoded in %.2f mseconds\n",
 	 snum + 1, numframes, elapsed_time*1000);
 	total_time += elapsed_time;
 
    }/* for (snum */
 
-	fprintf(stdout, "%d frame(s) correctly decompressed\n", snum);
-	fprintf(stdout,"Total decoding time: %.2f seconds (%.1f fps)\n", 
+	fprintf(stdout, "%u frame(s) correctly decompressed\n", snum);
+	fprintf(stdout,"Total decoding time: %.2f seconds (%.1f fps)\n",
 	 total_time, (float)numframes/total_time);
-		
+
 	failed = 0;
 
 fin:
-	fclose(infile);	
+	fclose(infile);
 
-	if(frame_codestream) free(frame_codestream);	
+	if(frame_codestream) free(frame_codestream);
 
 	/* free remaining structures */
-	if(dinfo) 
+	if(dinfo)
    {
 	mj2_destroy_decompress(movie);
 	free(dinfo);
    }
-	
+
   return failed;
 }/* main() */

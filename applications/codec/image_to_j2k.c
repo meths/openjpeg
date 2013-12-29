@@ -1718,10 +1718,11 @@ int main(int argc, char **argv) {
 					return 1;
 				}
 				res = fwrite(cio->buffer, 1, codestream_length, f);
-        if( res < (size_t)codestream_length ) { /* FIXME */
+				if( res < (size_t)codestream_length ) { /* FIXME */
  					fprintf(stderr, "failed to write %d (%s)\n", codestream_length, parameters.outfile);
+					fclose(f);
 					return 1;
-         }
+				}
 				fclose(f);
 
 				fprintf(stderr,"Generated outfile %s\n",parameters.outfile);
@@ -1779,10 +1780,11 @@ int main(int argc, char **argv) {
 					return 1;
 				}
 				res = fwrite(cio->buffer, 1, codestream_length, f);
-        if( res < (size_t)codestream_length ) { /* FIXME */
+				if( res < (size_t)codestream_length ) { /* FIXME */
  					fprintf(stderr, "failed to write %d (%s)\n", codestream_length, parameters.outfile);
+					fclose(f);
 					return 1;
-         }
+				}
 				fclose(f);
 				fprintf(stderr,"Generated outfile %s\n",parameters.outfile);
 				/* close and free the byte stream */

@@ -79,5 +79,5 @@ void print_boxheader( boxheader_param_t *boxheader)
 {
   fprintf( logstream, "boxheader info:\n"
 	   "\t type: %.4s\n"
-	   "\t length:%lld %#llx\n", boxheader->type, boxheader->length, boxheader->length);
+	   "\t length:%llu %#llx\n", boxheader->type, boxheader->length, boxheader->length);
 }

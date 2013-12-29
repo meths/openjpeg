@@ -164,8 +164,8 @@ void print_metadata( metadata_param_t *metadata)
   boxcont = metadata->boxcontents;
   if( boxcont)
       fprintf( logstream, "box contents:\n"
-	       "\t offset: %lld %#llx\n" 
-	       "\t length: %lld %#llx\n", boxcont->offset, boxcont->offset, boxcont->length, boxcont->length);
+	       "\t offset: %llu %#llx\n"
+	       "\t length: %llu %#llx\n", boxcont->offset, boxcont->offset, boxcont->length, boxcont->length);
 }
 
 void print_allmetadata( metadatalist_param_t *list)

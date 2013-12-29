@@ -170,6 +170,8 @@ int main(int argc, char **argv)
     if(ferror(fbase))
       {
       printf("Error reading base file.\n");
+      fclose(ftest);
+      fclose(fbase);
       return EXIT_FAILURE;
       }
 
@@ -177,6 +179,8 @@ int main(int argc, char **argv)
     if(ferror(ftest))
       {
       printf("Error reading test file.\n");
+      fclose(ftest);
+      fclose(fbase);
       return EXIT_FAILURE;
       }
 

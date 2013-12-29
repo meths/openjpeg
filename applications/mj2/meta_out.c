@@ -400,7 +400,7 @@ void xml_write_uuid(FILE* xmlout, opj_mj2_t * movie) {
 
 void xml_write_trak(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum, unsigned int sampleframe, opj_event_mgr_t *event_mgr)
 {
-  fprintf(xmlout,    "    <Track BoxType=\"trak\" Instance=\"%d\">\n", tnum);
+  fprintf(xmlout,    "    <Track BoxType=\"trak\" Instance=\"%u\">\n", tnum);
   xml_write_tkhd(file, xmlout, track, tnum);
   // TO DO: TrackReferenceContainer 'tref'  just used in hint track
   // TO DO: EditListContainer 'edts', contains EditList 'elst' with media-time, segment-duration, media-rate
@@ -438,7 +438,7 @@ void xml_write_tkhd(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum
     fprintf(xmlout,  "      <!-- m2j_to_metadata currently doesn't distinguish between TrackHeader and MediaHeader source. -->\n");
     fprintf(xmlout,  "      <!-- If both found, value read from MediaHeader is used. -->\n");
   }
-  fprintf(xmlout,    "        <TrackID>%u</TrackID>\n", track->track_ID);
+  fprintf(xmlout,    "        <TrackID>%d</TrackID>\n", track->track_ID);
   if(track->track_type==0) /* For visual track */
   {
     fprintf(xmlout,  "        <TrackLayer>%d</TrackLayer>\n", track->layer);
@@ -582,7 +582,7 @@ void xml_write_mdia(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum
     fprintf(xmlout,  "          <!-- Timescale defines time units in one second -->\n");
   fprintf(xmlout,    "          <Duration>\n");
   if(raw)
-    fprintf(xmlout,  "            <InTimeUnits>%u</InTimeUnits>\n", track->duration);
+    fprintf(xmlout,  "            <InTimeUnits>%d</InTimeUnits>\n", track->duration);
   if(derived)
     fprintf(xmlout,  "            <InSeconds>%12.3f</InSeconds>\n", (double)track->duration/(double)track->timescale);    // Make this double later to get fractional seconds
   fprintf(xmlout,    "          </Duration>\n");
@@ -681,7 +681,7 @@ void xml_write_mdia(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum
       fprintf(xmlout,"              <!-- Only the first 16 bytes of URL location are recorded in mj2_to_metadata data structure. -->\n");
     for(i = 0; i < 4; i++) {
       uint_to_chars(track->url[track->num_url].location[i], buf);
-    fprintf(xmlout,  "              <Location>%s</Location>\n");
+    fprintf(xmlout,  "              <Location>%s</Location>\n", buf);
     }
     fprintf(xmlout,  "            </DataEntryUrlBox>\n"); // table w. flags, URLs, URNs
   }
@@ -699,7 +699,7 @@ void xml_write_mdia(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum
     fprintf(xmlout,  "              <Location>");
     for(i = 0; i < 4; i++) {
       uint_to_chars(track->urn[track->num_urn].location[i], buf);
-      fprintf(xmlout,"%s");
+      fprintf(xmlout,"%s",buf);
     }
     fprintf(xmlout,  "</Location>\n");
     fprintf(xmlout,  "            </DataEntryUrnBox>\n");
@@ -849,23 +849,23 @@ void xml_write_stbl(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum
   }
   fprintf(xmlout,      "            <TimeToSample BoxType=\"stts\">\n");  
   fprintf(xmlout,      "              <SampleStatistics>\n");  
-  fprintf(xmlout,      "                <TotalSamples>%d</TotalSamples>\n", track->num_samples);
+  fprintf(xmlout,      "                <TotalSamples>%u</TotalSamples>\n", track->num_samples);
   if(notes)
     fprintf(xmlout,    "                <!-- For video, gives the total frames in the track, by summing all entries in the Sample Table -->\n");
   fprintf(xmlout,      "              </SampleStatistics>\n"); 
   fprintf(xmlout,      "              <SampleEntries EntryCount=\"%d\">\n", track->num_tts);
   for (i = 0; i < track->num_tts; i++) {
-    fprintf(xmlout,    "                <Table Entry=\"%u\" SampleCount=\"%d\" SampleDelta=\"%u\" />\n",
+    fprintf(xmlout,    "                <Table Entry=\"%u\" SampleCount=\"%d\" SampleDelta=\"%d\" />\n",
                                       i+1, track->tts[i].sample_count, track->tts[i].sample_delta);
   }
   fprintf(xmlout,      "              </SampleEntries>\n");
   fprintf(xmlout,      "            </TimeToSample>\n");
 
-  fprintf(xmlout,      "            <SampleToChunk BoxType=\"stsc\" Count=\"%d\">\n", track->num_samplestochunk);
+  fprintf(xmlout,      "            <SampleToChunk BoxType=\"stsc\" Count=\"%u\">\n", track->num_samplestochunk);
   for (i = 0; i < track->num_samplestochunk; i++) {
     fprintf(xmlout,    "              <FirstChunk>%u</FirstChunk>\n",track->sampletochunk[i].first_chunk); /* 4 bytes */
     fprintf(xmlout,    "              <SamplesPerChunk>%u</SamplesPerChunk>\n",track->sampletochunk[i].samples_per_chunk); /* 4 bytes */
-    fprintf(xmlout,    "              <SampleDescrIndex>%u</SampleDescrIndex>\n",track->sampletochunk[i].sample_descr_idx); /* 4 bytes */
+    fprintf(xmlout,    "              <SampleDescrIndex>%d</SampleDescrIndex>\n",track->sampletochunk[i].sample_descr_idx); /* 4 bytes */
   }
   fprintf(xmlout,      "            </SampleToChunk>\n");
   // After reading this info in, track->num_chunks is calculated and a decompressed table established internally.
@@ -902,7 +902,7 @@ void xml_write_stbl(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum
   }
   if(sampletables)
     for (i = 0; i < (int)track->num_chunks; i++)
-      fprintf(xmlout,  "              <Chunk_Offset Num=\"%d\">%u</Chunk_Offset>\n", i+1, track->chunk[i].offset);
+      fprintf(xmlout,  "              <Chunk_Offset Num=\"%d\">%d</Chunk_Offset>\n", i+1, track->chunk[i].offset);
   fprintf(xmlout,      "            </ChunkOffset>\n");
 
   fprintf(xmlout,      "          </SampleTable>\n");
@@ -1207,7 +1207,7 @@ void xml_out_frame_cod(FILE* xmlout, opj_tcp_t *tcp)
         fprintf(xmlout,"%s        <WidthAsDecimal>%d</WidthAsDecimal>\n", s, tccp->prcw[i]);
         fprintf(xmlout,"%s        <HeightAsDecimal>%d</HeightAsDecimal>\n", s, tccp->prch[i]);
 	  }
-      fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s, i);
+      fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s);
     }
     fprintf(xmlout,    "%s    </PrecinctSize>\n",s); /* 1 byte, SPcox (I_i) */
   }
@@ -1299,7 +1299,7 @@ void xml_out_frame_coc(FILE* xmlout, opj_tcp_t *tcp, int numcomps) /* Optional i
           fprintf(xmlout,"%s        <WidthAsDecimal>%d</WidthAsDecimal>\n", s, tccp->prcw[i]);
           fprintf(xmlout,"%s        <HeightAsDecimal>%d</HeightAsDecimal>\n", s, tccp->prch[i]);
 		}
-        fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s, i);
+        fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s);
       }
       fprintf(xmlout,    "%s    </PrecinctSize>\n", s); /* 1 byte, SPcox (I_i) */
     }
@@ -1680,7 +1680,7 @@ void xml_out_frame_rgn(FILE* xmlout, opj_tcp_t *tcp, int numcomps)
     fprintf(xmlout,    "%s  <SPrgn>%d</SPrgn>\n", s, SPrgn); /* 1 byte */
     if(notes)
       fprintf(xmlout,  "%s  <!-- SPrgn is implicit ROI shift, i.e., binary shifting of ROI coefficients above background. -->\n", s);
-    fprintf(xmlout,    "</RegionOfInterest\n", s); /* Optional in main header, at most 1 per component */
+    fprintf(xmlout,    "%s</RegionOfInterest\n", s); /* Optional in main header, at most 1 per component */
   }
 }
 

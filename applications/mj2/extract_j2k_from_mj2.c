@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
 	goto fin;
    }
 
-  fprintf(stdout,"Extracting %d frames from file...\n",track->num_samples);
+  fprintf(stdout,"Extracting %u frames from file...\n",track->num_samples);
 
   for (snum=0; snum < track->num_samples; snum++)
   {
@@ -165,17 +165,18 @@ int main(int argc, char *argv[]) {
 /* Assuming that jp and ftyp markers size do: */
     fread(frame_codestream,sample->sample_size-8,1, mj2file);  
 
-    sprintf(outfilename,"%s_%05d.j2k",argv[2],snum);
+    sprintf(outfilename,"%s_%05u.j2k",argv[2],snum);
     outfile = fopen(outfilename, "wb");
     if (!outfile) {
       fprintf(stderr, "failed to open %s for writing\n",outfilename);
+      free(frame_codestream);
       goto fin;
     }
     fwrite(frame_codestream,sample->sample_size-8,1,outfile);
     fclose(outfile);
     free(frame_codestream);
   }
-  fprintf(stdout, "%d frames correctly extracted\n", snum);
+  fprintf(stdout, "%u frames correctly extracted\n", snum);
   failed = 0;
 
 fin:

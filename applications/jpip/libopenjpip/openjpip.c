@@ -391,7 +391,7 @@ void output_log( bool messages, bool metadata, bool ihdrbox, jpip_dec_param_t *d
     print_allmetadata( dec->metadatalist);
 
   if( ihdrbox){
-    printf("W*H: %d*%d\n", dec->ihdrbox->height, dec->ihdrbox->width);
+    printf("W*H: %u*%u\n", dec->ihdrbox->height, dec->ihdrbox->width);
     printf("NC: %d, bpc: %d\n", dec->ihdrbox->nc, dec->ihdrbox->bpc);
   }
 }

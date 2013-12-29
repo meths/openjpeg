@@ -137,7 +137,7 @@ void decode_help_display() {
 
 int get_num_images(char *imgdirpath){
 	DIR *dir;
-	struct dirent* content;	
+	struct dirent* content;
 	int num_images = 0;
 
 	/*Reading the input images from given input directory*/
@@ -147,18 +147,19 @@ int get_num_images(char *imgdirpath){
 		fprintf(stderr,"Could not open Folder %s\n",imgdirpath);
 		return 0;
 	}
-	
+
 	while((content=readdir(dir))!=NULL){
 		if(strcmp(".",content->d_name)==0 || strcmp("..",content->d_name)==0 )
 			continue;
 		num_images++;
 	}
+	close(dir);
 	return num_images;
 }
 
 int load_images(dircnt_t *dirptr, char *imgdirpath){
 	DIR *dir;
-	struct dirent* content;	
+	struct dirent* content;
 	int i = 0;
 
 	/*Reading the input images from given input directory*/
@@ -170,7 +171,7 @@ int load_images(dircnt_t *dirptr, char *imgdirpath){
 	}else	{
 		fprintf(stderr,"Folder opened successfully\n");
 	}
-	
+
 	while((content=readdir(dir))!=NULL){
 		if(strcmp(".",content->d_name)==0 || strcmp("..",content->d_name)==0 )
 			continue;
@@ -178,7 +179,8 @@ int load_images(dircnt_t *dirptr, char *imgdirpath){
 		strcpy(dirptr->filename[i],content->d_name);
 		i++;
 	}
-	return 0;	
+	close(dir);
+	return 0;
 }
 
 int get_file_format(char *filename) {
@@ -243,15 +245,15 @@ int parse_cmdline_decoder(int argc, char * const argv[], opj_dparameters_t *para
 					case JPT_CFMT:
 						break;
 					default:
-						fprintf(stderr, 
-							"!! Unrecognized format for infile : %s [accept only *.j2k, *.jp2, *.jpc or *.jpt] !!\n\n", 
+						fprintf(stderr,
+							"!! Unrecognized format for infile : %s [accept only *.j2k, *.jp2, *.jpc or *.jpt] !!\n\n",
 							infile);
 						return 1;
 				}
 				strncpy(parameters->infile, infile, sizeof(parameters->infile)-1);
 			}
 			break;
-				
+
 				/* ----------------------------------------------------- */
 
 			case 'o':			/* output file */
@@ -273,7 +275,7 @@ int parse_cmdline_decoder(int argc, char * const argv[], opj_dparameters_t *para
 				strncpy(parameters->outfile, outfile, sizeof(parameters->outfile)-1);
 			}
 			break;
-			
+
 				/* ----------------------------------------------------- */
 
 			case 'O':			/* output format */
@@ -318,21 +320,21 @@ int parse_cmdline_decoder(int argc, char * const argv[], opj_dparameters_t *para
 				sscanf(opj_optarg, "%d", &parameters->cp_reduce);
 			}
 			break;
-			
+
 				/* ----------------------------------------------------- */
-      
+
 
 			case 'l':		/* layering option */
 			{
 				sscanf(opj_optarg, "%d", &parameters->cp_layer);
 			}
 			break;
-			
+
 				/* ----------------------------------------------------- */
 
 			case 'h': 			/* display an help description */
 				decode_help_display();
-				return 1;				
+				return 1;
 
 				/* ------------------------------------------------------ */
 
@@ -349,7 +351,7 @@ int parse_cmdline_decoder(int argc, char * const argv[], opj_dparameters_t *para
 				/* ----------------------------------------------------- */
 /* UniPG>> */
 #ifdef USE_JPWL
-			
+
 			case 'W': 			/* activate JPWL correction */
 			{
 				char *token = NULL;
@@ -414,12 +416,12 @@ int parse_cmdline_decoder(int argc, char * const argv[], opj_dparameters_t *para
 				fprintf(stdout, "JPWL correction capability activated\n");
 				fprintf(stdout, "- expecting %d components\n", parameters->jpwl_exp_comps);
 			}
-			break;	
+			break;
 #endif /* USE_JPWL */
-/* <<UniPG */            
+/* <<UniPG */
 
 				/* ----------------------------------------------------- */
-			
+
 			default:
 				fprintf(stderr,"WARNING -> this option is not valid \"-%c %s\"\n",c, opj_optarg);
 				break;
@@ -463,7 +465,7 @@ void warning_callback(const char *msg, void *client_data) {
 	jbuffer = (*env)->NewStringUTF(env, msg);
 	(*env)->ExceptionClear(env);
 	(*env)->CallVoidMethod(env, *(vars->jobj), vars->message_mid, jbuffer);
-	
+
 	if ((*env)->ExceptionOccurred(env)) {
 		fprintf(stderr,"C: Exception during call back method\n");
 		(*env)->ExceptionDescribe(env);
@@ -530,7 +532,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 	jint retval = FAILS;
 
 	/* configure the event callbacks */
-	memset(&event_mgr, 0, sizeof(opj_event_mgr_t));	
+	memset(&event_mgr, 0, sizeof(opj_event_mgr_t));
 	event_mgr.error_handler = error_callback;
 	event_mgr.warning_handler = warning_callback;
 	event_mgr.info_handler = info_callback;
@@ -538,7 +540,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 /* JNI reference to the calling class */
 	cls = (*env)->GetObjectClass(env, obj);
 
-/* Pointers to be able to call a Java method 
+/* Pointers to be able to call a Java method
  * for all the info and error messages
 */
 	msgErrorCallback_vars.env = env;
@@ -576,7 +578,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 
 /*	Release the Java arguments array */
 	for (i=1; i<argc; i++)
-	 (*env)->ReleaseStringUTFChars(env, 
+	 (*env)->ReleaseStringUTFChars(env,
 		(*env)->GetObjectArrayElement(env, javaParameters, i-1), argv[i]);
 
 	if(j == 1) goto fin; /* failure */
@@ -601,14 +603,17 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 			fsrc = fopen(parameters.infile, "rb");
 			if (!fsrc) {
 				fprintf(stderr, "ERROR -> failed to open %s for reading\n", parameters.infile);
-			goto fin;
+				goto fin;
 			}
 			fseek(fsrc, 0, SEEK_END);
 			file_length = ftell(fsrc);
 			fseek(fsrc, 0, SEEK_SET);
 			src = (unsigned char *) malloc(file_length);
 
-			if(src == NULL) goto fin;
+			if(src == NULL) {
+				fclose(fsrc);
+				goto fin;
+			}
 
 			fread(src, 1, file_length, fsrc);
 			fclose(fsrc);
@@ -769,7 +774,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 #ifdef CHECK_THRESHOLDS
 		printf("C: checking thresholds\n");
 #endif
-/* First compute the real with and height, 
+/* First compute the real with and height,
  * in function of the resolutions decoded.
 */
 /*---
@@ -783,7 +788,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 			ptr = image->comps[0].data;
 			ptr1 = image->comps[1].data;
 			ptr2 = image->comps[2].data;
-#ifdef CHECK_THRESHOLDS 
+#ifdef CHECK_THRESHOLDS
 			if (image->comps[0].sgnd) {
 				min_value = -128;
 				max_value = 127;
@@ -791,7 +796,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 				min_value = 0;
 				max_value = 255;
 			}
-#endif			
+#endif
 /* Get the pointer to the Java structure where the data must be copied */
 			fid = (*env)->GetFieldID(env, cls,"image24", "[I");
 			jia = (*env)->GetObjectField(env, obj, fid);
@@ -829,7 +834,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 				jba = (*env)->GetObjectField(env, obj, fid);
 				jbBody = (*env)->GetByteArrayElements(env, jba, 0);
 				ptrBBody = jbBody;
-#ifdef CHECK_THRESHOLDS 
+#ifdef CHECK_THRESHOLDS
 				if (image->comps[0].sgnd) {
 					min_value = -128;
 					max_value = 127;
@@ -837,7 +842,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					min_value = 0;
 					max_value = 255;
 				}
-#endif								
+#endif
 /* printf("C: transfering %d shorts to Java image8 pointer = %d\n", wr*hr,ptrSBody); */
 				for (i=0; i<w*h; i++) {
 					tempUC = (unsigned char) (ptr[i]);
@@ -856,7 +861,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 				jsa = (*env)->GetObjectField(env, obj, fid);
 				jsBody = (*env)->GetShortArrayElements(env, jsa, 0);
 				ptrSBody = jsBody;
-#ifdef CHECK_THRESHOLDS 
+#ifdef CHECK_THRESHOLDS
 				if (image->comps[0].sgnd) {
 					min_value = -32768;
 					max_value = 32767;
@@ -864,17 +869,17 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					min_value = 0;
 					max_value = 65535;
 				}
-				printf("C: minValue = %d, maxValue = %d\n", min_value, max_value);
-#endif				
+				printf("C: minValue = %ld, maxValue = %ld\n", min_value, max_value);
+#endif
 				printf("C: transfering %d shorts to Java image16 pointer = %d\n", w*h,ptrSBody);
 				for (i=0; i<w*h; i++) {
 					tempS = (short) (ptr[i]);
 #ifdef CHECK_THRESHOLDS
 					if (tempS<min_value) {
-						printf("C: value %d truncated to %d\n", tempS, min_value);
+						printf("C: value %d truncated to %ld\n", tempS, min_value);
 						tempS = min_value;
 					} else if (tempS > max_value) {
-						printf("C: value %d truncated to %d\n", tempS, max_value);
+						printf("C: value %d truncated to %ld\n", tempS, max_value);
 						tempS = max_value;
 					}
 #endif
@@ -883,7 +888,7 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 				(*env)->ReleaseShortArrayElements(env, jsa, jsBody, 0);
 				printf("C: image16 completely filled\n");
 			}
-		}	
+		}
 
 
 		/* free remaining structures */

@@ -152,11 +152,11 @@ void print_SIZ( SIZmarker_param_t SIZ)
 
   fprintf( logstream, "\tImage and Tile SIZ parameters\n");
   fprintf( logstream, "\t              Rsiz: %#x\n", SIZ.Rsiz);
-  fprintf( logstream, "\t        Xsiz, Ysiz: (%d,%d) = (%#x, %#x)\n", SIZ.Xsiz, SIZ.Ysiz, SIZ.Xsiz, SIZ.Ysiz);
-  fprintf( logstream, "\t      XOsiz, YOsiz: (%d,%d) = (%#x, %#x)\n", SIZ.XOsiz, SIZ.YOsiz, SIZ.XOsiz, SIZ.YOsiz);
-  fprintf( logstream, "\t      XTsiz, YTsiz: (%d,%d) = (%#x, %#x)\n", SIZ.XTsiz, SIZ.YTsiz, SIZ.XTsiz, SIZ.YTsiz);
-  fprintf( logstream, "\t    XTOsiz, YTOsiz: (%d,%d) = (%#x, %#x)\n", SIZ.XTOsiz, SIZ.YTOsiz, SIZ.XTOsiz, SIZ.YTOsiz);
-  fprintf( logstream, "\t    XTnum, YTnum: (%d,%d)\n", SIZ.XTnum, SIZ.YTnum);
+  fprintf( logstream, "\t        Xsiz, Ysiz: (%u,%u) = (%#x, %#x)\n", SIZ.Xsiz, SIZ.Ysiz, SIZ.Xsiz, SIZ.Ysiz);
+  fprintf( logstream, "\t      XOsiz, YOsiz: (%u,%u) = (%#x, %#x)\n", SIZ.XOsiz, SIZ.YOsiz, SIZ.XOsiz, SIZ.YOsiz);
+  fprintf( logstream, "\t      XTsiz, YTsiz: (%u,%u) = (%#x, %#x)\n", SIZ.XTsiz, SIZ.YTsiz, SIZ.XTsiz, SIZ.YTsiz);
+  fprintf( logstream, "\t    XTOsiz, YTOsiz: (%u,%u) = (%#x, %#x)\n", SIZ.XTOsiz, SIZ.YTOsiz, SIZ.XTOsiz, SIZ.YTOsiz);
+  fprintf( logstream, "\t    XTnum, YTnum: (%u,%u)\n", SIZ.XTnum, SIZ.YTnum);
   fprintf( logstream, "\t Num of Components: %d\n", SIZ.Csiz);
   
   for( i=0; i<SIZ.Csiz; i++)
@@ -173,7 +173,7 @@ void print_COD( CODmarker_param_t COD)
   fprintf( logstream, "\t Decomposition lvl: %d\n", COD.numOfdecomp);
   
   for( i=0; i<=((COD.Scod & 0x01) ? COD.numOfdecomp:0); i++){
-    fprintf( logstream, "\t  [%d] XPsiz, YPsiz: (%d,%d) = (%#x, %#x)\n",i, COD.XPsiz[i], COD.YPsiz[i], COD.XPsiz[i], COD.YPsiz[i]);
+    fprintf( logstream, "\t  [%d] XPsiz, YPsiz: (%u,%u) = (%#x, %#x)\n",i, COD.XPsiz[i], COD.YPsiz[i], COD.XPsiz[i], COD.YPsiz[i]);
   }
 }
 

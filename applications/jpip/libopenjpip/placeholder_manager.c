@@ -112,10 +112,10 @@ void print_placeholder( placeholder_param_t *phld)
   int i;
 
   fprintf( logstream, "placeholder info:\n");
-  fprintf( logstream, "\t LBox: %d %#x\n", phld->LBox, phld->LBox);
+  fprintf( logstream, "\t LBox: %u %#x\n", phld->LBox, phld->LBox);
   fprintf( logstream, "\t TBox: %.4s\n", phld->TBox);
   fprintf( logstream, "\t Flags: %#x %#x\n", phld->Flags, phld->Flags);
-  fprintf( logstream, "\t OrigID: %lld\n", phld->OrigID);
+  fprintf( logstream, "\t OrigID: %llu\n", phld->OrigID);
   fprintf( logstream, "\t OrigBH: ");
   
   for( i=0; i< phld->OrigBHlen; i++)

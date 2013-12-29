@@ -100,13 +100,13 @@ void print_msgqueue( msgqueue_param_t *msgqueue)
   ptr = msgqueue->first;
 
   while( ptr){
-    fprintf( logstream, "\t class_id: %lld %s\n", ptr->class_id, message_class[ptr->class_id]);
-    fprintf( logstream, "\t in_class_id: %lld\n", ptr->in_class_id );
-    fprintf( logstream, "\t csn: %lld\n", ptr->csn );
+    fprintf( logstream, "\t class_id: %llu %s\n", ptr->class_id, message_class[ptr->class_id]);
+    fprintf( logstream, "\t in_class_id: %llu\n", ptr->in_class_id );
+    fprintf( logstream, "\t csn: %llu\n", ptr->csn );
     fprintf( logstream, "\t bin_offset: %#llx\n", ptr->bin_offset );
     fprintf( logstream, "\t length: %#llx\n", ptr->length );
     if( ptr->class_id%2)
-      fprintf( logstream, "\t aux: %lld\n", ptr->aux );
+      fprintf( logstream, "\t aux: %llu\n", ptr->aux );
     fprintf( logstream, "\t last_byte: %d\n", ptr->last_byte );
     if( ptr->phld)
       print_placeholder( ptr->phld);

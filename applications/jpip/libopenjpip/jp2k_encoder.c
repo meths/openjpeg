@@ -156,7 +156,7 @@ bool isJPPstream( Byte8_t csn, msgqueue_param_t *msgqueue)
     msg = msg->next;
   }
   
-  fprintf( FCGI_stderr, "Error, message of csn %lld not found\n", csn);
+  fprintf( FCGI_stderr, "Error, message of csn %llu not found\n", csn);
 
   return false;
 }

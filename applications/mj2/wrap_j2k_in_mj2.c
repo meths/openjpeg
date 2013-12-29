@@ -52,7 +52,7 @@ Size of memory first allocated for MOOV box
 static int test_image(const char *fname, mj2_cparameters_t *cp)
 {
 	FILE *reader;
-	opj_image_t *image;
+	opj_image_t *image = NULL;
 	unsigned char *src;
 	opj_dinfo_t *dinfo;
 	opj_cio_t *cio;
@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
   unsigned char* frame_codestream;
   FILE *mj2file, *j2kfile;
   char *j2kfilename;
-  unsigned char *buf;
+  unsigned char *buf = NULL;
   int offset, mdat_initpos, failed;
   opj_image_t img;
  	opj_cio_t *cio;
@@ -354,12 +354,12 @@ int main(int argc, char *argv[]) {
   while(1)
   {
     sample = &movie->tk[0].sample[snum];
-    sprintf(j2kfilename,"%s_%05d.j2k",argv[1],snum);
+    sprintf(j2kfilename,"%s_%05u.j2k",argv[1],snum);
     j2kfile = fopen(j2kfilename, "rb");
     if (!j2kfile) 
  {
 /* No more files found: done. Leave while(1) loop: */
-	fprintf(stdout,"%d frames are being added to the MJ2 file\n",snum);
+	fprintf(stdout,"%u frames are being added to the MJ2 file\n",snum);
 	break;
  }
 

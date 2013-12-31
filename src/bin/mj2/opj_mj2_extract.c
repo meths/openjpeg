@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
     outfile = fopen(outfilename, "wb");
     if (!outfile) {
       fprintf(stderr, "failed to open %s for writing\n",outfilename);
+      free(frame_codestream);
       return 1;
     }
     fwrite(frame_codestream,sample->sample_size-8,1,outfile);

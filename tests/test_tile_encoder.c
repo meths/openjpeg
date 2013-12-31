@@ -250,6 +250,7 @@ int main (int argc, char *argv[])
     l_codec = opj_create_compress(OPJ_CODEC_J2K);
     }
 	if (!l_codec) {
+		free(l_data);
 		return 1;
 	}
 
@@ -261,6 +262,7 @@ int main (int argc, char *argv[])
 	l_image = opj_image_tile_create(num_comps,l_params,OPJ_CLRSPC_SRGB);
 	if (! l_image) {
 		opj_destroy_codec(l_codec);
+		free(l_data);
 		return 1;
 	}
 
@@ -274,6 +276,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "ERROR -> test_tile_encoder: failed to setup the codec!\n");
 		opj_destroy_codec(l_codec);
 		opj_image_destroy(l_image);
+		free(l_data);
 		return 1;
 	}
 
@@ -282,6 +285,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "ERROR -> test_tile_encoder: failed to create the stream from the output file %s !\n",output_file );
 		opj_destroy_codec(l_codec);
 		opj_image_destroy(l_image);
+		free(l_data);
 		return 1;
 	}
 
@@ -290,6 +294,7 @@ int main (int argc, char *argv[])
 		opj_stream_destroy_v3(l_stream);
 		opj_destroy_codec(l_codec);
 		opj_image_destroy(l_image);
+		free(l_data);
 		return 1;
 	}
 
@@ -299,6 +304,7 @@ int main (int argc, char *argv[])
 			opj_stream_destroy_v3(l_stream);
 			opj_destroy_codec(l_codec);
 			opj_image_destroy(l_image);
+			free(l_data);
 			return 1;
 		}
 	}
@@ -308,6 +314,7 @@ int main (int argc, char *argv[])
 		opj_stream_destroy_v3(l_stream);
 		opj_destroy_codec(l_codec);
 		opj_image_destroy(l_image);
+		free(l_data);
 		return 1;
 	}
 

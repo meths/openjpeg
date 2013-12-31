@@ -416,8 +416,7 @@ static int get_file_format(char *filename) {
 
 static char * get_file_name(char *name){
 	char *fname;
-	fname= (char*)malloc(OPJ_PATH_LEN*sizeof(char));
-	fname= strtok(name,".");
+	fname = strtok(name,".");
 	return fname;
 }
 

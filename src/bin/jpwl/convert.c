@@ -121,7 +121,8 @@ static int tga_readheader(FILE *fp, unsigned int *bits_per_pixel,
 	if ( fread(tga, TGA_HEADER_SIZE, 1, fp) != 1 )
 	{
 		fprintf(stderr, "\nError: fread return a number of element different from the expected.\n");
-	    return 0 ;
+		free(tga);
+		return 0 ;
 	}
 	id_len = (unsigned char)tga[0];
 	cmap_type = (unsigned char)tga[1];
@@ -1428,6 +1429,7 @@ int imagetopgx(opj_image_t * image, const char *outfile) {
 		fdest = fopen(name, "wb");
 		if (!fdest) {
 			fprintf(stderr, "ERROR -> failed to open %s for writing\n", name);
+			free(name);
 			return 1;
 		}
     /* dont need name anymore */

@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
   // Checking output file
   xmlout = fopen(outfile, "w"); /* was: argv[2] */
   if (!xmlout) {
+    fclose(file);
     fprintf(stderr, "Failed to open %s for writing.\n", outfile); /* was: argv[2] */
     return 1;
   }

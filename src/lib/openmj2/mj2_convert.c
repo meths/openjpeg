@@ -57,9 +57,8 @@ unsigned int OPJ_CALLCONV yuv_num_frames(mj2_tk_t * tk, char *infile)
   end_of_f = ftell(f);		/* Calculate file size */
 	
   if (end_of_f < frame_size) {
-    fprintf(stderr,
-			"YUV does not contains any frame of %d x %d size\n", tk->w,
-			tk->h);
+    fclose(f);
+    fprintf(stderr, "YUV does not contains any frame of %d x %d size\n", tk->w, tk->h);
     return 0;
   }
   fclose(f);

@@ -360,6 +360,7 @@ static unsigned int get_num_images(char *imgdirpath){
 			continue;
 		num_images++;
 	}
+	closedir(dir);
 	return num_images;
 }
 
@@ -385,6 +386,7 @@ static int load_images(dircnt_t *dirptr, char *imgdirpath){
 		strcpy(dirptr->filename[i],content->d_name);
 		i++;
 	}
+	closedir(dir);
 	return 0;
 }
 
@@ -1717,6 +1719,7 @@ int main(int argc, char **argv) {
 				}
 				res = fwrite(cio->buffer, 1, codestream_length, f);
         if( res < (size_t)codestream_length ) { /* FIXME */
+					fclose(f);
  					fprintf(stderr, "failed to write %d (%s)\n", codestream_length, parameters.outfile);
 					return 1;
          }
@@ -1778,6 +1781,7 @@ int main(int argc, char **argv) {
 				}
 				res = fwrite(cio->buffer, 1, codestream_length, f);
         if( res < (size_t)codestream_length ) { /* FIXME */
+					fclose(f);
  					fprintf(stderr, "failed to write %d (%s)\n", codestream_length, parameters.outfile);
 					return 1;
          }

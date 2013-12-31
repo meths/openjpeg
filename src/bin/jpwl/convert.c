@@ -425,6 +425,7 @@ int imagetotga(opj_image_t * image, const char *outfile) {
 		if ((image->comps[0].dx != image->comps[i+1].dx) 
 			||(image->comps[0].dy != image->comps[i+1].dy) 
 			||(image->comps[0].prec != image->comps[i+1].prec))	{
+      fclose(fdest);
       fprintf(stderr, "Unable to create a tga file with such J2K image charateristics.");
       return 1;
    }
@@ -438,8 +439,10 @@ int imagetotga(opj_image_t * image, const char *outfile) {
 
 	/* Write TGA header  */
 	bpp = write_alpha ? 32 : 24;
-	if (!tga_writeheader(fdest, bpp, width , height, OPJ_TRUE))
+	if (!tga_writeheader(fdest, bpp, width , height, OPJ_TRUE)) {
+		fclose(fdest);
 		return 1;
+	}
 
 	alpha_channel = image->numcomps-1; 
 
@@ -468,6 +471,7 @@ int imagetotga(opj_image_t * image, const char *outfile) {
 			value = (unsigned char)(b*scale);
 			res = fwrite(&value,1,1,fdest);
       if( res < 1 ) {
+        fclose(fdest);
         fprintf(stderr, "failed to write 1 byte for %s\n", outfile);
         return 1;
       }
@@ -475,6 +479,7 @@ int imagetotga(opj_image_t * image, const char *outfile) {
 			value = (unsigned char)(g*scale);
 			res = fwrite(&value,1,1,fdest);
       if( res < 1 ) {
+        fclose(fdest);
         fprintf(stderr, "failed to write 1 byte for %s\n", outfile);
         return 1;
       }
@@ -482,6 +487,7 @@ int imagetotga(opj_image_t * image, const char *outfile) {
 			value = (unsigned char)(r*scale);
 			res = fwrite(&value,1,1,fdest);
       if( res < 1 ) {
+        fclose(fdest);
         fprintf(stderr, "failed to write 1 byte for %s\n", outfile);
         return 1;
       }
@@ -491,13 +497,14 @@ int imagetotga(opj_image_t * image, const char *outfile) {
 				value = (unsigned char)(a*scale);
 				res = fwrite(&value,1,1,fdest);
         if( res < 1 ) {
+          fclose(fdest);
           fprintf(stderr, "failed to write 1 byte for %s\n", outfile);
           return 1;
         }
 			}
 		}
 	}
-
+	fclose(fdest);
 	return 0;
 }
 
@@ -705,6 +712,7 @@ opj_image_t* bmptoimage(const char *filename, opj_cparameters_t *parameters)
 	{
 		free(RGB);
 		opj_image_destroy(image);
+		fclose(IN);
 		fprintf(stderr, "\nError: fread return a number of element different from the expected.\n");
 	    return NULL;
 	}
@@ -797,6 +805,7 @@ opj_image_t* bmptoimage(const char *filename, opj_cparameters_t *parameters)
 		free(table_B);
 		free(RGB);
 		opj_image_destroy(image);
+		fclose(IN);
 		fprintf(stderr, "\nError: fread return a number of element different from the expected.\n");
 	    return NULL;
 	}
@@ -1293,6 +1302,7 @@ opj_image_t* pgxtoimage(const char *filename, opj_cparameters_t *parameters) {
 
 	fseek(f, 0, SEEK_SET);
 	if( fscanf(f, "PG%[ \t]%c%c%[ \t+-]%d%[ \t]%d%[ \t]%d",temp,&endian1,&endian2,signtmp,&prec,temp,&w,temp,&h) != 9){
+		fclose(f);
 		fprintf(stderr, "ERROR: Failed to read the right number of element from the fscanf() function!\n");
 		return NULL;
 	}
@@ -1310,6 +1320,7 @@ opj_image_t* pgxtoimage(const char *filename, opj_cparameters_t *parameters) {
 	} else if (endian2=='M' && endian1=='L') {
 		bigendian = 0;
 	} else {
+		fclose(f);
 		fprintf(stderr, "Bad pgx header, please check input file\n");
 		return NULL;
 	}
@@ -1454,6 +1465,7 @@ int imagetopgx(opj_image_t * image, const char *outfile) {
 				char byte = (char) (v >> (j * 8));
 				res = fwrite(&byte, 1, 1, fdest);
         if( res < 1 ) {
+          fclose(fdest);
           fprintf(stderr, "failed to write 1 byte for %s\n", name);
           return 1;
         }
@@ -2853,6 +2865,7 @@ opj_image_t* rawtoimage(const char *filename, opj_cparameters_t *parameters, raw
 		for(compno = 0; compno < numcomps; compno++) {
 			for (i = 0; i < w * h; i++) {
 				if (!fread(&value, 1, 1, f)) {
+					fclose(f);
 					fprintf(stderr,"Error reading raw file. End of file probably reached.\n");
 					return NULL;
 				}
@@ -2881,6 +2894,7 @@ opj_image_t* rawtoimage(const char *filename, opj_cparameters_t *parameters, raw
 		}
 	}
 	else {
+		fclose(f);
 		fprintf(stderr,"OpenJPEG cannot encode raw components with bit depth higher than 16 bits.\n");
 		return NULL;
 	}

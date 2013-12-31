@@ -292,6 +292,7 @@ opj_volume_t* pgxtovolume(char *relpath, opj_cparameters_t *parameters) {
 				cmptparm.bigendian = 0;
 			} else {
 				fprintf(stdout, "[ERROR] Bad pgx header, please check input file\n");
+				fclose(f);
 				return NULL;
 			}
 
@@ -738,9 +739,9 @@ int volumetobin(opj_volume_t * volume, char *outfile) {
 			}
 		}
 	
+	fclose(fdest);
 	}
 	
-	fclose(fdest);
 
 	sprintf(name,"%s.img",outfile);
 	fimgdest = fopen(name, "w");

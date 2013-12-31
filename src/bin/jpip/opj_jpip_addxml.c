@@ -88,7 +88,10 @@ int main(int argc, char *argv[])
     return -1;
   
   xmldata = read_xmlfile( argv[2], &fsize);
-  if( fsize < 0 ) return -1;
+  if( fsize < 0 ) {
+    fclose(fp);
+    return -1;
+  }
   boxsize = fsize + 8;
 
   fputc( (boxsize>>24)&0xff, fp);

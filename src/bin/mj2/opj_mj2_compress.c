@@ -695,6 +695,7 @@ int main(int argc, char **argv)
 	 yuv_num_frames(&movie->tk[0],mj2_parameters.infile);
 
 	if (movie->tk[0].num_samples == 0) {
+		fclose(mj2file);
 		return 1;
 	}
 
@@ -705,6 +706,7 @@ int main(int argc, char **argv)
 	 malloc(movie->tk[0].num_samples * sizeof(mj2_sample_t));
   
 	if (mj2_init_stdmovie(movie)) {
+    fclose(mj2file);
     fprintf(stderr, "Error with movie initialization");
     return 1;
 	}    

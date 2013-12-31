@@ -103,7 +103,8 @@ int main(int argc, char *argv[]) {
 	
   /* Checking output file */
   outfile = fopen(argv[2], "w");
-  if (!file) {
+  if (!outfile) {
+    fclose(file);
     fprintf(stderr, "failed to open %s for writing\n", argv[2]);
     return 1;
   }

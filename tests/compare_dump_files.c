@@ -169,6 +169,8 @@ int main(int argc, char **argv)
     chbase = fgetc(fbase);
     if(ferror(fbase))
       {
+      fclose(fbase);
+      fclose(ftest);
       printf("Error reading base file.\n");
       return EXIT_FAILURE;
       }
@@ -176,6 +178,8 @@ int main(int argc, char **argv)
     chtest = fgetc(ftest);
     if(ferror(ftest))
       {
+      fclose(fbase);
+      fclose(ftest);
       printf("Error reading test file.\n");
       return EXIT_FAILURE;
       }

@@ -166,11 +166,13 @@ int main(int argc, char *argv[]) {
     sample = &track->sample[snum];
 		if (sample->sample_size-8 > max_codstrm_size) {
 			max_codstrm_size =  sample->sample_size-8;
-			if ((frame_codestream = (unsigned char*)
-				realloc(frame_codestream, max_codstrm_size)) == NULL) {
+			unsigned char* new_frame_codestream = (unsigned char*)realloc(frame_codestream, max_codstrm_size);
+			if (new_frame_codestream == NULL) {
+				free(frame_codestream);
 				printf("Error reallocation memory\n");
 				return 1;
-			}; 		
+			};
+			frame_codestream = new_frame_codestream;
 		}
     fseek(file,sample->offset+8,SEEK_SET);
     fread(frame_codestream, sample->sample_size-8, 1, file);  /* Assuming that jp and ftyp markers size do */

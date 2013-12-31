@@ -2701,7 +2701,14 @@ int OPJ_CALLCONV mj2_read_struct(FILE *file, opj_mj2_t *movie) {
   }	
 
   fseek(file,foffset,SEEK_SET);
-  src = (unsigned char*)opj_realloc(src,box.length);
+  new_src = (unsigned char*)opj_realloc(src,box.length);
+  if (new_src == NULL) {
+    opj_event_msg(cio->cinfo, EVT_ERROR, "Unable to reallocate memory for src box\n");
+    opj_free(src);
+    return 1;
+  }
+  src = new_src;
+
   fsresult = fread(src,box.length,1,file);
   if (fsresult != 1) {
     opj_event_msg(cio->cinfo, EVT_ERROR, "End of file reached while trying to read MOOV box\n");

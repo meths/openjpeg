@@ -1539,7 +1539,12 @@ static void j2k_read_sod(opj_j2k_t *j2k) {
 	}	
 
 	data = j2k->tile_data[curtileno];
-	data = (unsigned char*) opj_realloc(data, (j2k->tile_len[curtileno] + len) * sizeof(unsigned char));
+	new_data = (unsigned char*) opj_realloc(data, (j2k->tile_len[curtileno] + len) * sizeof(unsigned char));
+	if (new_data == NULL) {
+		free(data);
+		return;
+	}
+	data = new_data;
 
 	data_ptr = data + j2k->tile_len[curtileno];
 	for (i = 0; i < len; i++) {

@@ -400,7 +400,7 @@ void xml_write_uuid(FILE* xmlout, opj_mj2_t * movie) {
 
 void xml_write_trak(FILE* file, FILE* xmlout, mj2_tk_t *track, unsigned int tnum, unsigned int sampleframe, opj_event_mgr_t *event_mgr)
 {
-  fprintf(xmlout,    "    <Track BoxType=\"trak\" Instance=\"%d\">\n", tnum);
+  fprintf(xmlout,    "    <Track BoxType=\"trak\" Instance=\"%u\">\n", tnum);
   xml_write_tkhd(file, xmlout, track, tnum);
   // TO DO: TrackReferenceContainer 'tref'  just used in hint track
   // TO DO: EditListContainer 'edts', contains EditList 'elst' with media-time, segment-duration, media-rate
@@ -1207,7 +1207,7 @@ void xml_out_frame_cod(FILE* xmlout, opj_tcp_t *tcp)
         fprintf(xmlout,"%s        <WidthAsDecimal>%d</WidthAsDecimal>\n", s, tccp->prcw[i]);
         fprintf(xmlout,"%s        <HeightAsDecimal>%d</HeightAsDecimal>\n", s, tccp->prch[i]);
 	  }
-      fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s, i);
+      fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s);
     }
     fprintf(xmlout,    "%s    </PrecinctSize>\n",s); /* 1 byte, SPcox (I_i) */
   }
@@ -1299,7 +1299,7 @@ void xml_out_frame_coc(FILE* xmlout, opj_tcp_t *tcp, int numcomps) /* Optional i
           fprintf(xmlout,"%s        <WidthAsDecimal>%d</WidthAsDecimal>\n", s, tccp->prcw[i]);
           fprintf(xmlout,"%s        <HeightAsDecimal>%d</HeightAsDecimal>\n", s, tccp->prch[i]);
 		}
-        fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s, i);
+        fprintf(xmlout,  "%s      </PrecinctHeightAndWidth>\n", s);
       }
       fprintf(xmlout,    "%s    </PrecinctSize>\n", s); /* 1 byte, SPcox (I_i) */
     }
@@ -1680,7 +1680,7 @@ void xml_out_frame_rgn(FILE* xmlout, opj_tcp_t *tcp, int numcomps)
     fprintf(xmlout,    "%s  <SPrgn>%d</SPrgn>\n", s, SPrgn); /* 1 byte */
     if(notes)
       fprintf(xmlout,  "%s  <!-- SPrgn is implicit ROI shift, i.e., binary shifting of ROI coefficients above background. -->\n", s);
-    fprintf(xmlout,    "</RegionOfInterest\n", s); /* Optional in main header, at most 1 per component */
+    fprintf(xmlout,    "%s</RegionOfInterest\n", s); /* Optional in main header, at most 1 per component */
   }
 }
 

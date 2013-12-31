@@ -507,7 +507,7 @@ opj_volume_t* bintovolume(char *filename, char *fileimg, opj_cparameters_t *para
 	/*fscanf(fimg, "Resolution(mm)%[ \t]%d%[ \t]%d%[ \t]%d%[ \n\t]",temp,&subsampling_dx,temp,&subsampling_dy,temp,&subsampling_dz,temp);*/
 
 	#ifdef VERBOSE
-		fprintf(stdout, "[INFO] %d \t %d %d %d \t %3.2f %2.2f %2.2f \t %d \n",color_space,w,h,l,subsampling_dx,subsampling_dy,subsampling_dz,prec);
+		fprintf(stdout, "[INFO] %d \t %d %d %d \t %d %d %d \t %d \n",color_space,w,h,l,subsampling_dx,subsampling_dy,subsampling_dz,prec);
 	#endif
 	fclose(fimg);
 	

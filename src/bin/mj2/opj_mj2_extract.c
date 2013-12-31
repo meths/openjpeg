@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
     fseek(file,sample->offset+8,SEEK_SET);
     fread(frame_codestream,sample->sample_size-8,1, file);  /* Assuming that jp and ftyp markers size do*/
 
-    sprintf(outfilename,"%s_%05d.j2k",argv[2],snum);
+    sprintf(outfilename,"%s_%05u.j2k",argv[2],snum);
     outfile = fopen(outfilename, "wb");
     if (!outfile) {
       fprintf(stderr, "failed to open %s for writing\n",outfilename);
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
     free(frame_codestream);
     }
   fclose(file);
-  fprintf(stdout, "%d frames correctly extracted\n", snum);
+  fprintf(stdout, "%u frames correctly extracted\n", snum);
 	
 	/* free remaining structures */
 	if(dinfo) {

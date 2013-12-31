@@ -850,17 +850,17 @@ JNIEXPORT jint JNICALL Java_org_openJpeg_OpenJPEGJavaDecoder_internalDecodeJ2Kto
 					min_value = 0;
 					max_value = 65535;
 				}
-				printf("C: minValue = %d, maxValue = %d\n", min_value, max_value);
+				printf("C: minValue = %ld, maxValue = %ld\n", min_value, max_value);
 #endif				
 				printf("C: transfering %d shorts to Java image16 pointer = %d\n", w*h,ptrSBody);
 				for (i=0; i<w*h; i++) {
 					tempS = (short) (ptr[i]);
 #ifdef CHECK_THRESHOLDS
 					if (tempS<min_value) {
-						printf("C: value %d truncated to %d\n", tempS, min_value);
+						printf("C: value %d truncated to %ld\n", tempS, min_value);
 						tempS = min_value;
 					} else if (tempS > max_value) {
-						printf("C: value %d truncated to %d\n", tempS, max_value);
+						printf("C: value %d truncated to %ld\n", tempS, max_value);
 						tempS = max_value;
 					}
 #endif

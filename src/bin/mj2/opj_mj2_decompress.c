@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
       (img->comps[2].dx == 1))/* If YUV 4:4:4 input --> to bmp */
     {
       fprintf(stdout,"The frames will be output in a bmp format (output_1.bmp, ...)\n");
-      sprintf(outfilename,"output_%d.bmp",snum);
+      sprintf(outfilename,"output_%u.bmp",snum);
       if (imagetobmp(img, outfilename))	/* Convert image to BMP */
 				return 1;
       
@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
       fprintf(stdout,"Image component dimensions are unknown. Unable to output image\n");
       fprintf(stdout,"The frames will be output in a j2k file (output_1.j2k, ...)\n");
 			
-      sprintf(outfilename,"output_%d.j2k",snum);
+      sprintf(outfilename,"output_%u.j2k",snum);
       outfile = fopen(outfilename, "wb");
       if (!outfile) {
 				fprintf(stderr, "failed to open %s for writing\n",outfilename);
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 		/* free image data structure */
 		opj_image_destroy(img);
 		elapsed_time = opj_clock()-init_time;
-		fprintf(stderr, "Frame number %d/%d decoded in %.2f mseconds\n", snum + 1, numframes, elapsed_time*1000);
+		fprintf(stderr, "Frame number %d/%u decoded in %.2f mseconds\n", snum + 1, numframes, elapsed_time*1000);
 		total_time += elapsed_time;
 
   }
@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
 	}
 	free(dinfo);
 	
-	fprintf(stdout, "%d frame(s) correctly decompressed\n", snum);
+	fprintf(stdout, "%u frame(s) correctly decompressed\n", snum);
 	fprintf(stdout,"Total decoding time: %.2f seconds (%.1f fps)\n", total_time, (float)numframes/total_time);
 		
   return 0;

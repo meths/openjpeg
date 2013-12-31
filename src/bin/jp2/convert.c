@@ -620,7 +620,7 @@ opj_image_t* bmptoimage(const char *filename, opj_cparameters_t *parameters)
 
 	if(Info_h.biSize != 40)
    {
-	fprintf(stderr,"Error, unknown BMP header size %d\n", Info_h.biSize);
+	fprintf(stderr,"Error, unknown BMP header size %u\n", Info_h.biSize);
 	fclose(IN);
 	return NULL;
    }

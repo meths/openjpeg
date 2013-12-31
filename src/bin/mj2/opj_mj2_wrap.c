@@ -432,7 +432,7 @@ int main(int argc, char *argv[]) {
     mj2_sample_t * new_sample;
     mj2_chunk_t * new_chunk;
     sample = &movie->tk[0].sample[snum];
-    sprintf(j2kfilename,"%s_%05d.j2k",argv[1],snum);
+    sprintf(j2kfilename,"%s_%05u.j2k",argv[1],snum);
     j2kfile = fopen(j2kfilename, "rb");
     if (!j2kfile) {
       if (snum==0) {  /* Could not open a single codestream */
@@ -440,7 +440,7 @@ int main(int argc, char *argv[]) {
 				return 1;
       }
       else {	      /* Tried to open a inexistant codestream */
-				fprintf(stdout,"%d frames are being added to the MJ2 file\n",snum);
+				fprintf(stdout,"%u frames are being added to the MJ2 file\n",snum);
 				break;
       }
     }
